@@ -60,11 +60,11 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
-      // Slow orbit around pool
-      const angle = t * 0.12;
-      const r = 38;
-      camPos.current.lerp(new THREE.Vector3(Math.sin(angle) * r, 18, Math.cos(angle) * r - 20), 0.04);
-      camTarget.current.lerp(new THREE.Vector3(0, 0, -18), 0.06);
+      // Slow orbit — always stays high enough to see pool
+      const angle = t * 0.1;
+      const r = 36;
+      camPos.current.lerp(new THREE.Vector3(Math.sin(angle) * r, 20, Math.cos(angle) * r - 10), 0.04);
+      camTarget.current.lerp(new THREE.Vector3(0, 1, -15), 0.06);
     }
 
     // ---- GREETING ----
@@ -100,6 +100,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- RACING — cinematic multi-angle cuts ----
     else if (appState === AppState.RACING) {
+      if (swimmers.length === 0) return;
       const elapsed = t - raceStartRef.current;
 
       // Compute swimmer center
@@ -112,6 +113,8 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       });
       centerX /= swimmers.length;
       centerZ /= swimmers.length;
+      // Clamp center to pool bounds
+      centerZ = Math.max(-52, Math.min(3, centerZ));
 
       // Advance shot timer
       shotTimer.current += delta;
@@ -121,59 +124,53 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
         shotIdx.current = (shotIdx.current + 1) % RACE_SHOTS.length;
       }
       const shot = RACE_SHOTS[shotIdx.current % RACE_SHOTS.length];
-      const lerpSpeed = 0.055;
+      const ls = 0.055;
+      const width = Math.max(4, swimmers.length * 3);
 
       switch (shot.id) {
         case 'side_high': {
-          // Classic elevated side view following swimmers
-          const width = swimmers.length * 3;
-          camPos.current.lerp(new THREE.Vector3(centerX + width + 14, 14, centerZ + 4), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ), lerpSpeed * 1.4);
+          camPos.current.lerp(new THREE.Vector3(centerX + width + 14, 14, centerZ + 4), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ), ls * 1.4);
           break;
         }
         case 'in_water': {
-          // Camera between lanes — low, dramatic
+          // Between lanes — just at/above water surface, never underground
           const lane0X = swimmers[0] ? swimmers[0].lane * 3 : 0;
-          camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, -0.3, centerZ + 6), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, -0.2, centerZ - 6), lerpSpeed * 1.6);
+          camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, 0.5, centerZ + 7), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 5), ls * 1.6);
           break;
         }
         case 'top_down': {
-          // Overhead bird's-eye view straight down
-          camPos.current.lerp(new THREE.Vector3(centerX, 20, centerZ), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ - 3), lerpSpeed * 1.2);
+          camPos.current.lerp(new THREE.Vector3(centerX, 22, centerZ), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ - 2), ls * 1.2);
           break;
         }
         case 'lead_follow': {
-          // Chasing the leader from behind
           const leader = swimmers.reduce((best, s) => {
             const p = Math.min(elapsed * s.speed, 1);
             const bp = Math.min(elapsed * best.speed, 1);
             return p > bp ? s : best;
-          }, swimmers[0] || { speed: 0.04, lane: 0 });
+          }, swimmers[0]);
           const leaderP = Math.min(elapsed * leader.speed, 1);
-          const leaderZ = 2.2 - leaderP * 54.6;
+          const leaderZ = Math.max(-50, 2.2 - leaderP * 54.6);
           const leaderX = leader.lane * 3;
-          camPos.current.lerp(new THREE.Vector3(leaderX + 2, 3, leaderZ + 9), lerpSpeed * 0.9);
-          camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 5), lerpSpeed * 1.5);
+          camPos.current.lerp(new THREE.Vector3(leaderX + 2, 4, leaderZ + 10), ls * 0.9);
+          camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 4), ls * 1.5);
           break;
         }
         case 'side_low': {
-          // Low side angle, very close to water surface
-          camPos.current.lerp(new THREE.Vector3(centerX - (swimmers.length * 1.5 + 8), 1.5, centerZ), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ), lerpSpeed * 1.4);
+          camPos.current.lerp(new THREE.Vector3(centerX - (width + 8), 2.5, centerZ), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ), ls * 1.4);
           break;
         }
         case 'front_head': {
-          // Head-on view — camera at finish end looking at swimmers coming toward it
-          camPos.current.lerp(new THREE.Vector3(centerX, 6, centerZ - 18), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ + 5), lerpSpeed * 1.2);
+          camPos.current.lerp(new THREE.Vector3(centerX, 7, centerZ - 16), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ + 6), ls * 1.2);
           break;
         }
         case 'behind': {
-          // From the start block, watching swimmers race away
-          camPos.current.lerp(new THREE.Vector3(centerX, 8, centerZ + 18), lerpSpeed);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ - 4), lerpSpeed * 1.2);
+          camPos.current.lerp(new THREE.Vector3(centerX, 9, centerZ + 16), ls);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 4), ls * 1.2);
           break;
         }
       }

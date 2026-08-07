@@ -61,7 +61,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
       group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
-      group.current.rotation.set(0, Math.PI, 0); // face toward camera (pool side)
+      // Y=π → swimmer faces AWAY from camera (we see their black back/head)
+      group.current.rotation.set(0, Math.PI, 0);
       if (body.current) body.current.rotation.set(0, 0, 0);
       if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.3);
       if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.3);
@@ -96,26 +97,27 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // DIVE phase (0–7%): long diagonal arc entry
+        // DIVE phase (0–7%): long diagonal arc entry far from block
         const diveThreshold = 0.07;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
-          // Much longer leap: 4.5 units horizontal, 1.6 units vertical arc
+          // Long arcing leap — 4.5 units horizontal, 1.6 units high
           const diveLeap = Math.sin(diveT * Math.PI) * 4.5;
+          group.current.position.x = swimmer.lane * laneWidth; // stay in lane
           group.current.position.z = startZ - nextProgress * poolLength - diveLeap;
           const jumpHeight = Math.sin(diveT * Math.PI) * 1.6;
-          // Steeper descent at entry: drop from block height to water level
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.3);
-          // Rotate from upright to nose-diving angle
+          // rotation.x goes from 0 (standing) → +π/1.5 (nose-diving)
+          // rotation.y stays at π (back toward camera throughout)
           group.current.rotation.set(
-            THREE.MathUtils.lerp(0, -Math.PI / 1.6, diveT),
+            THREE.MathUtils.lerp(0, Math.PI / 1.5, diveT),
             Math.PI,
             0
           );
-          if (body.current) body.current.rotation.x = 0;
+          if (body.current) body.current.rotation.set(0, 0, 0);
           // Arms streamline forward during dive
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, -0.06);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, 0.06);
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(Math.PI * 0.9 * diveT, 0, -0.06);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(Math.PI * 0.9 * diveT, 0, 0.06);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -123,14 +125,17 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM phase: body horizontal, 180° around Y so chest faces forward
+          // SWIM phase:
+          //   rotation.x = +π/2 → body lies horizontal
+          //   rotation.y = π    → head faces -Z (finish), face faces -Y (into water) = freestyle ✓
+          group.current.position.x = swimmer.lane * laneWidth; // locked to lane
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
-          group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
+          group.current.rotation.set(Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
 
-          // Per-swimmer speed variation
-          const swimSpeed = (4.2 + p_var * 3 + p_spurt * 12) * animMult.current;
+          // Per-swimmer speed variation — clamped so limbs never stop
+          const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed; // continuous accumulating angle
 
           // ===== FREESTYLE ARM ANIMATION =====
@@ -177,16 +182,17 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           computeArm(0, leftUpperArm, leftForearm, -1);
           computeArm(Math.PI, rightUpperArm, rightForearm, 1);
 
-          // ===== FLUTTER KICK (legs) =====
-          const kickSpeed = swimSpeed * 1.7;
-          const kickAmp = 0.42;
+          // ===== FLUTTER KICK (legs) — always running, clamped speed =====
+          // Per-swimmer kick speed uses a separate ref so it's independent & never 0
+          const kickSpeed = Math.max(5.0, swimSpeed * 1.65);
+          const kickAmp = 0.44;
 
           const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
             if (!legUpperRef.current || !legCalfRef.current) return;
             const legSin = Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = legSin * kickAmp;
-            // Knee bend: bends when leg sweeps upward (positive sin)
-            const kneeBend = Math.max(0, legSin) * 0.65;
+            // Knee bends when leg sweeps upward (flutter kick)
+            const kneeBend = Math.max(0, legSin) * 0.62;
             legCalfRef.current.rotation.x = kneeBend;
           };
 
