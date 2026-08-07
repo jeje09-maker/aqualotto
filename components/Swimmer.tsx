@@ -61,7 +61,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
       group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
-      group.current.rotation.set(0, 0, 0);
+      group.current.rotation.set(0, Math.PI, 0); // face toward camera (pool side)
       if (body.current) body.current.rotation.set(0, 0, 0);
       if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.3);
       if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.3);
@@ -96,19 +96,26 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // DIVE phase (0–4%)
-        const diveThreshold = 0.04;
+        // DIVE phase (0–7%): long diagonal arc entry
+        const diveThreshold = 0.07;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
-          const diveLeap = Math.sin(diveT * Math.PI) * 1.8;
+          // Much longer leap: 4.5 units horizontal, 1.6 units vertical arc
+          const diveLeap = Math.sin(diveT * Math.PI) * 4.5;
           group.current.position.z = startZ - nextProgress * poolLength - diveLeap;
-          const jumpHeight = Math.sin(diveT * Math.PI) * 0.9;
-          group.current.position.y = onBlockY + jumpHeight - diveT * 4.2;
-          group.current.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 1.7, diveT);
+          const jumpHeight = Math.sin(diveT * Math.PI) * 1.6;
+          // Steeper descent at entry: drop from block height to water level
+          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.3);
+          // Rotate from upright to nose-diving angle
+          group.current.rotation.set(
+            THREE.MathUtils.lerp(0, -Math.PI / 1.6, diveT),
+            Math.PI,
+            0
+          );
           if (body.current) body.current.rotation.x = 0;
-          // Arms straight forward during dive
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, -0.08);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, 0.08);
+          // Arms streamline forward during dive
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, -0.06);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, 0.06);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -116,10 +123,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM phase: body horizontal, face down
+          // SWIM phase: body horizontal, 180° around Y so chest faces forward
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
-          group.current.rotation.set(-Math.PI / 2, 0, 0);
+          group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
 
           // Per-swimmer speed variation
