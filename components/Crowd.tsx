@@ -75,11 +75,13 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
     const t = state.clock.getElapsedTime();
 
     spectators.forEach((s, i) => {
-      // Cheer intensity: oscillates between 0 and 1 (always positive)
-      const cheer = (Math.sin(t * s.cheerSpeed + s.phase) + 1) * 0.5; // 0→1
+      // cheer: 0 = rest, 1 = full cheer
+      const cheer = (Math.sin(t * s.cheerSpeed + s.phase) + 1) * 0.5;
       const jump = cheer * s.jumpH;
 
-      // --- BODY (torso box) ---
+      const bodyTopY = s.y + 0.21; // half-height of body scale (0.42/2)
+
+      // --- BODY ---
       dummyBody.position.set(s.x, s.y + jump, s.z);
       dummyBody.scale.set(0.32, 0.42, 0.26);
       dummyBody.rotation.set(0, 0, 0);
@@ -87,48 +89,54 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
       bodyRef.current.setMatrixAt(i, dummyBody.matrix);
       bodyRef.current.setColorAt(i, s.shirtColor);
 
-      // --- HEAD (sphere, above body) ---
-      dummyBody.position.set(s.x, s.y + 0.36 + jump, s.z);
+      // --- HEAD ---
+      dummyBody.position.set(s.x, s.y + 0.38 + jump, s.z);
       dummyBody.scale.set(0.21, 0.23, 0.21);
       dummyBody.rotation.set(0, 0, 0);
       dummyBody.updateMatrix();
       headRef.current.setMatrixAt(i, dummyBody.matrix);
       headRef.current.setColorAt(i, s.skinColor);
 
-      // --- ARMS ---
-      // arm raise angle: 0 = hanging down, π*0.9 = fully raised overhead
-      // When cheer=1 (peak), arms go almost vertical above head
-      // When cheer=0 (rest), arms hang at ~30° outward
-      const armAngle = THREE.MathUtils.lerp(0.3, Math.PI * 0.88, cheer);
-      const armLen = 0.18; // half-length of arm box
+      // --- ARMS (attached at shoulders) ---
+      // alpha: angle of arm from straight-up (0 = raised, π = hanging down)
+      // cheer 0→1 means alpha goes from π*0.85 (hanging) → 0.18 (nearly vertical)
+      const alpha = THREE.MathUtils.lerp(Math.PI * 0.85, 0.18, cheer);
+      const halfLen = 0.18; // half of arm length (scale.y 0.36 / 2)
 
-      const shoulderY = s.y + 0.2 + jump; // top of torso
+      // Shoulder positions — fixed at top-sides of torso
+      const shoulderY = bodyTopY + jump;
+      const shoulderOffset = 0.17; // horizontal distance from center to shoulder
 
-      // LEFT ARM: pivots at left shoulder, raises to the left-upward
-      // Center of arm box = shoulder + armLen * direction
-      const lDirX = -Math.sin(armAngle); // negative X (left)
-      const lDirY = Math.cos(armAngle);   // positive Y (up)
+      // Arm direction from vertical: left arm tilts toward -X
+      // dir = (-sin(alpha), cos(alpha)) in the XY plane
+      const sinA = Math.sin(alpha);
+      const cosA = Math.cos(alpha);
+
+      // LEFT ARM
+      // Shoulder at: (s.x - shoulderOffset, shoulderY, s.z)
+      // Arm center = shoulder + direction * halfLen
+      // For left arm direction = (-sinA, cosA): tilts upward-left when alpha is small
       dummyArm.position.set(
-        s.x - 0.18 + lDirX * armLen,
-        shoulderY + lDirY * armLen,
+        s.x - shoulderOffset - sinA * halfLen,
+        shoulderY + cosA * halfLen,
         s.z
       );
-      dummyArm.scale.set(0.1, 0.36, 0.1);
-      dummyArm.rotation.set(0, 0, -(Math.PI / 2 - armAngle)); // tilt angle from vertical
+      dummyArm.scale.set(0.09, 0.36, 0.09);
+      // rotation.z = +alpha: capsule +Y tilts toward -X by alpha radians
+      dummyArm.rotation.set(0, 0, alpha);
       dummyArm.updateMatrix();
       leftArmRef.current.setMatrixAt(i, dummyArm.matrix);
       leftArmRef.current.setColorAt(i, s.skinColor);
 
-      // RIGHT ARM: mirror
-      const rDirX = Math.sin(armAngle);
-      const rDirY = Math.cos(armAngle);
+      // RIGHT ARM (mirror)
       dummyArm.position.set(
-        s.x + 0.18 + rDirX * armLen,
-        shoulderY + rDirY * armLen,
+        s.x + shoulderOffset + sinA * halfLen,
+        shoulderY + cosA * halfLen,
         s.z
       );
-      dummyArm.scale.set(0.1, 0.36, 0.1);
-      dummyArm.rotation.set(0, 0, (Math.PI / 2 - armAngle));
+      dummyArm.scale.set(0.09, 0.36, 0.09);
+      // rotation.z = -alpha: capsule +Y tilts toward +X
+      dummyArm.rotation.set(0, 0, -alpha);
       dummyArm.updateMatrix();
       rightArmRef.current.setMatrixAt(i, dummyArm.matrix);
       rightArmRef.current.setColorAt(i, s.skinColor);

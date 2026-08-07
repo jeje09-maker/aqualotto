@@ -77,10 +77,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
     // ---- READY ----
     if (appState === AppState.READY) {
+      // Keep showing back (black head) just like IDLE
+      group.current.rotation.y = Math.PI;
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
       if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.08, 0.15);
-      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, 0.4, 0.15);
-      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, 0.4, 0.15);
+      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, -0.4, 0.15);
+      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, -0.4, 0.15);
     }
 
     // ---- RACING ----
@@ -161,7 +163,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
               // Pull: arm underwater pulling through
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2; // -π → +π
             }
-            armUpperRef.current.rotation.x = armX * 0.6;
+            // Negate rotation so arm sweeps FORWARD into water on pull (correct freestyle direction)
+            armUpperRef.current.rotation.x = -armX * 0.6;
             // Slight outward flare
             armUpperRef.current.rotation.z = zSign * (0.15 + Math.sin(ph) * 0.08);
 
@@ -189,9 +192,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
           const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
             if (!legUpperRef.current || !legCalfRef.current) return;
-            const legSin = Math.sin(t * kickSpeed + phaseOffset);
+            // Negate legSin so kick direction matches actual freestyle (feet kick backward/downward)
+            const legSin = -Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = legSin * kickAmp;
-            // Knee bends when leg sweeps upward (flutter kick)
+            // Knee bends on the upswing
             const kneeBend = Math.max(0, legSin) * 0.62;
             legCalfRef.current.rotation.x = kneeBend;
           };
