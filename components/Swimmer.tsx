@@ -13,74 +13,22 @@ interface SwimmerProps {
   onReachedEnd: () => void;
 }
 
-// 관절이 있는 팔 컴포넌트: 상완 + 하완 (elbow bend)
-const ArmSegment: React.FC<{ color: string; side: 'left' | 'right' }> = ({ color, side }) => {
-  return (
-    <group>
-      {/* 상완 (upper arm) */}
-      <mesh position={[0, -0.22, 0]} castShadow>
-        <capsuleGeometry args={[0.07, 0.38, 4, 8]} />
-        <meshStandardMaterial color={color} roughness={0.4} />
-      </mesh>
-      {/* 팔꿈치 관절 */}
-      <group position={[0, -0.44, 0]}>
-        {/* 하완 (forearm) */}
-        <mesh position={[0, -0.18, 0]} castShadow>
-          <capsuleGeometry args={[0.055, 0.32, 4, 8]} />
-          <meshStandardMaterial color={color} roughness={0.4} />
-        </mesh>
-        {/* 손 */}
-        <mesh position={[0, -0.35, 0]} castShadow>
-          <boxGeometry args={[0.1, 0.08, 0.15]} />
-          <meshStandardMaterial color={color} roughness={0.5} />
-        </mesh>
-      </group>
-    </group>
-  );
-};
-
-// 관절이 있는 다리 컴포넌트: 허벅지 + 종아리 (knee bend)
-const LegSegment: React.FC<{ color: string }> = ({ color }) => {
-  return (
-    <group>
-      {/* 허벅지 (thigh) */}
-      <mesh position={[0, -0.26, 0]} castShadow>
-        <capsuleGeometry args={[0.09, 0.45, 4, 8]} />
-        <meshStandardMaterial color={color} roughness={0.4} />
-      </mesh>
-      {/* 무릎 관절 */}
-      <group position={[0, -0.52, 0]}>
-        {/* 종아리 (calf) */}
-        <mesh position={[0, -0.22, 0]} castShadow>
-          <capsuleGeometry args={[0.07, 0.38, 4, 8]} />
-          <meshStandardMaterial color={color} roughness={0.4} />
-        </mesh>
-        {/* 발 */}
-        <mesh position={[0, -0.42, 0.05]} castShadow>
-          <boxGeometry args={[0.1, 0.07, 0.22]} />
-          <meshStandardMaterial color={color} roughness={0.5} />
-        </mesh>
-      </group>
-    </group>
-  );
-};
-
 const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, onReachedEnd }) => {
   const group = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
 
-  // 팔 관절 refs (상완 회전)
+  // Upper arm groups (rotate at shoulder)
   const leftUpperArm = useRef<THREE.Group>(null);
   const rightUpperArm = useRef<THREE.Group>(null);
-  // 팔 하완 refs (팔꿈치 굽힘)
-  const leftForearmGroup = useRef<THREE.Group>(null);
-  const rightForearmGroup = useRef<THREE.Group>(null);
-  // 다리 관절 refs (허벅지 회전)
+  // Forearm groups (rotate at elbow — child of upper arm)
+  const leftForearm = useRef<THREE.Group>(null);
+  const rightForearm = useRef<THREE.Group>(null);
+  // Upper leg groups (rotate at hip)
   const leftUpperLeg = useRef<THREE.Group>(null);
   const rightUpperLeg = useRef<THREE.Group>(null);
-  // 다리 하완 refs (무릎 굽힘)
-  const leftCalfGroup = useRef<THREE.Group>(null);
-  const rightCalfGroup = useRef<THREE.Group>(null);
+  // Calf groups (rotate at knee — child of upper leg)
+  const leftCalf = useRef<THREE.Group>(null);
+  const rightCalf = useRef<THREE.Group>(null);
 
   const [progress, setProgress] = useState(0);
   const currentProgressRef = useRef(0);
@@ -92,8 +40,11 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
-  // 선수별 애니메이션 속도 랜덤 변화량
-  const animSpeedMult = useRef(0.85 + Math.random() * 0.3);
+  // Per-swimmer random animation speed multiplier for variety
+  const animMult = useRef(0.8 + Math.random() * 0.4);
+
+  const skinColor = '#f5c99a';
+  const swimColor = swimmer.color;
 
   useEffect(() => {
     if (appState === AppState.RACING) {
@@ -107,26 +58,31 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
     if (!group.current) return;
     const t = state.clock.getElapsedTime();
 
+    // ---- IDLE ----
     if (appState === AppState.IDLE) {
       group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
       group.current.rotation.set(0, 0, 0);
-      body.current.rotation.x = 0;
-      if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.25);
-      if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.25);
-      if (leftForearmGroup.current) leftForearmGroup.current.rotation.set(0, 0, 0);
-      if (rightForearmGroup.current) rightForearmGroup.current.rotation.set(0, 0, 0);
+      if (body.current) body.current.rotation.set(0, 0, 0);
+      if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.3);
+      if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.3);
+      if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
+      if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
       if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
       if (rightUpperLeg.current) rightUpperLeg.current.rotation.set(0, 0, 0);
+      if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
+      if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
       return;
     }
 
+    // ---- READY ----
     if (appState === AppState.READY) {
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
-      body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.05, 0.2);
-      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, 0.3, 0.2);
-      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, 0.3, 0.2);
+      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.08, 0.15);
+      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, 0.4, 0.15);
+      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, 0.4, 0.15);
     }
 
+    // ---- RACING ----
     if (appState === AppState.RACING) {
       if (currentProgressRef.current < 1) {
         const elapsed = t - startTime.current;
@@ -136,104 +92,104 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
         if (p_base > swimmer.spurtThreshold) {
           p_spurt = Math.pow((p_base - swimmer.spurtThreshold) * 10, 2.2) * swimmer.spurtStrength;
         }
-
-        const nextProgress = Math.max(currentProgressRef.current + (delta * 0.02), Math.min(p_base + p_var + p_spurt, 1));
+        const nextProgress = Math.max(currentProgressRef.current + delta * 0.02, Math.min(p_base + p_var + p_spurt, 1));
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // 다이빙 구간 (0~4%)
+        // DIVE phase (0–4%)
         const diveThreshold = 0.04;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
           const diveLeap = Math.sin(diveT * Math.PI) * 1.8;
-          group.current.position.z = startZ - (nextProgress * poolLength) - diveLeap;
+          group.current.position.z = startZ - nextProgress * poolLength - diveLeap;
           const jumpHeight = Math.sin(diveT * Math.PI) * 0.9;
-          group.current.position.y = onBlockY + jumpHeight - (diveT * 4.2);
+          group.current.position.y = onBlockY + jumpHeight - diveT * 4.2;
           group.current.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 1.7, diveT);
-          body.current.rotation.x = 0;
-          // 다이빙 시 팔을 앞으로 쭉 뻗음
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, -0.1);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.9 * diveT, 0, 0.1);
-          if (leftForearmGroup.current) leftForearmGroup.current.rotation.set(0, 0, 0);
-          if (rightForearmGroup.current) rightForearmGroup.current.rotation.set(0, 0, 0);
+          if (body.current) body.current.rotation.x = 0;
+          // Arms straight forward during dive
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, -0.08);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, 0.08);
+          if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
+          if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
+          if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
+          if (rightUpperLeg.current) rightUpperLeg.current.rotation.set(0, 0, 0);
+          if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
+          if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // 수영 구간: 몸통 수평
-          group.current.position.z = startZ - (nextProgress * poolLength);
+          // SWIM phase: body horizontal, face down
+          group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
           group.current.rotation.set(-Math.PI / 2, 0, 0);
-          body.current.rotation.x = 0;
+          if (body.current) body.current.rotation.x = 0;
 
-          // 수영 사이클 - 선수별 속도 다름
-          const swimSpeed = (4.5 + p_var * 4 + p_spurt * 15) * animSpeedMult.current;
-          const cycle = t * swimSpeed;
+          // Per-swimmer speed variation
+          const swimSpeed = (4.2 + p_var * 3 + p_spurt * 12) * animMult.current;
+          const cycle = t * swimSpeed; // continuous accumulating angle
 
-          // === 팔 애니메이션: 자유형 크롤 (프리스타일) ===
-          // 왼팔: 0 ~ 2π 사이클
-          // 물 위로 나오는 구간(recovery): 팔이 외부로 회전, 팔꿈치 구부러짐
-          // 물 속으로 당기는 구간(pull): 팔이 쭉 뻗고 아래로 내려옴
-          const leftCycle = cycle % (Math.PI * 2);
-          const rightCycle = (cycle + Math.PI) % (Math.PI * 2); // 반대 위상
+          // ===== FREESTYLE ARM ANIMATION =====
+          // Each arm is offset by π (opposite phase)
+          // Cycle phases:
+          //   0–π   : Recovery (above water) — arm sweeps from back, over the water
+          //   π–2π  : Pull (below water) — arm enters water, pulls through
 
-          const getArmRotation = (c: number) => {
-            // c: 0~2π
-            // 0~π: 물 위로 나오는 회전 (recovery phase)
-            // π~2π: 물 속으로 당기는 회전 (pull phase)
-            return -c; // 기본 순환
-          };
+          const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
+            if (!armUpperRef.current || !armForearmRef.current) return;
+            const ph = (cycle + phaseOffset) % (Math.PI * 2);
+            const norm = ph / (Math.PI * 2); // 0→1
 
-          const getElbowBend = (c: number) => {
-            // recovery 구간(물 위)에서 팔꿈치를 많이 굽힘
-            // pull 구간(물 속)에서 팔꿈치 펴짐
-            const normalized = c / (Math.PI * 2); // 0~1
-            if (normalized < 0.5) {
-              // recovery: 팔꿈치 굽힘 (0 → max → 0)
-              return Math.sin(normalized * Math.PI * 2) * 1.2;
+            // Upper arm rotation around X (forward/back)
+            // recovery: sweeps from ~1.5 (back) around to ~-1.5 (front entry)
+            // pull:     sweeps from ~-1.5 (entry) to ~1.2 (exit/back)
+            let armX: number;
+            if (norm < 0.5) {
+              // Recovery: arm above water — rotates backward over body
+              // 0 → over → reach forward
+              armX = Math.PI * (1 - 4 * norm); // +π → -π
             } else {
-              // pull: 팔꿈치 약간만 굽힘 (물 속에서 당기기)
-              return Math.sin((normalized - 0.5) * Math.PI) * 0.4;
+              // Pull: arm underwater pulling through
+              armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2; // -π → +π
             }
+            armUpperRef.current.rotation.x = armX * 0.6;
+            // Slight outward flare
+            armUpperRef.current.rotation.z = zSign * (0.15 + Math.sin(ph) * 0.08);
+
+            // Elbow bend
+            // Recovery phase (norm 0–0.5): elbow bends up to ~90° (π/2) as arm passes overhead
+            // Pull phase (norm 0.5–1): elbow mostly straight
+            let elbowBend: number;
+            if (norm < 0.5) {
+              // Peak elbow bend at norm~0.25 (directly overhead)
+              elbowBend = Math.sin(norm * Math.PI * 2) * (Math.PI / 2); // 0 → 90° → 0
+            } else {
+              // Under water pull — slight bend for power ~30°
+              elbowBend = Math.sin((norm - 0.5) * Math.PI) * 0.5;
+            }
+            armForearmRef.current.rotation.x = elbowBend;
           };
 
-          if (leftUpperArm.current) {
-            leftUpperArm.current.rotation.x = getArmRotation(leftCycle);
-            leftUpperArm.current.rotation.z = Math.sin(leftCycle * 0.5) * 0.15; // 측면 흔들림
-          }
-          if (rightUpperArm.current) {
-            rightUpperArm.current.rotation.x = getArmRotation(rightCycle);
-            rightUpperArm.current.rotation.z = -Math.sin(rightCycle * 0.5) * 0.15;
-          }
-          if (leftForearmGroup.current) {
-            leftForearmGroup.current.rotation.x = getElbowBend(leftCycle);
-          }
-          if (rightForearmGroup.current) {
-            rightForearmGroup.current.rotation.x = getElbowBend(rightCycle);
-          }
+          computeArm(0, leftUpperArm, leftForearm, -1);
+          computeArm(Math.PI, rightUpperArm, rightForearm, 1);
 
-          // === 다리 애니메이션: 플러터 킥 ===
-          // 다리가 교대로 올라갔다 내려오며 킥
-          const kickSpeed = swimSpeed * 1.6; // 팔보다 빠르게
-          const kickAmp = 0.45;
+          // ===== FLUTTER KICK (legs) =====
+          const kickSpeed = swimSpeed * 1.7;
+          const kickAmp = 0.42;
 
-          if (leftUpperLeg.current) {
-            const lKick = Math.sin(t * kickSpeed) * kickAmp;
-            leftUpperLeg.current.rotation.x = lKick;
-            // 무릎 굽힘: 다리가 위로 올라올 때 무릎이 굽힘
-            if (leftCalfGroup.current) {
-              const lKnee = Math.max(0, Math.sin(t * kickSpeed - 0.4)) * 0.6;
-              leftCalfGroup.current.rotation.x = lKnee;
-            }
-          }
-          if (rightUpperLeg.current) {
-            const rKick = Math.sin(t * kickSpeed + Math.PI) * kickAmp;
-            rightUpperLeg.current.rotation.x = rKick;
-            if (rightCalfGroup.current) {
-              const rKnee = Math.max(0, Math.sin(t * kickSpeed + Math.PI - 0.4)) * 0.6;
-              rightCalfGroup.current.rotation.x = rKnee;
-            }
-          }
+          const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
+            if (!legUpperRef.current || !legCalfRef.current) return;
+            const legSin = Math.sin(t * kickSpeed + phaseOffset);
+            legUpperRef.current.rotation.x = legSin * kickAmp;
+            // Knee bend: bends when leg sweeps upward (positive sin)
+            const kneeBend = Math.max(0, legSin) * 0.65;
+            legCalfRef.current.rotation.x = kneeBend;
+          };
 
-          // 몸통 롤링 (실제 자유형처럼 좌우로 살짝 기울기)
-          body.current.rotation.z = Math.sin(cycle * 0.5) * 0.2;
+          computeLeg(0, leftUpperLeg, leftCalf);
+          computeLeg(Math.PI, rightUpperLeg, rightCalf);
+
+          // ===== BODY ROLL (realistic crawl) =====
+          if (body.current) {
+            body.current.rotation.z = Math.sin(cycle * 0.5) * 0.22;
+          }
         }
 
         if (nextProgress >= 1) onReachedEnd();
@@ -242,115 +198,125 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
       }
     }
 
+    // ---- FINISHED ----
     if (appState === AppState.FINISHED) {
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, 0.4, 0.05);
       group.current.rotation.set(-0.2, Math.PI, 0);
     }
   });
 
-  const skinColor = '#ffdbac';
-
   return (
     <group ref={group} position={[swimmer.lane * laneWidth, onBlockY, startZ]}>
       <group ref={body}>
-        {/* 몸통 */}
+
+        {/* Torso */}
         <mesh castShadow>
           <capsuleGeometry args={[0.22, 0.5, 8, 16]} />
-          <meshStandardMaterial color={swimmer.color} roughness={0.3} metalness={0.2} />
+          <meshStandardMaterial color={swimColor} roughness={0.3} metalness={0.15} />
         </mesh>
 
-        {/* 머리 */}
-        <group position={[0, 0.56, 0]}>
+        {/* Head */}
+        <group position={[0, 0.57, 0]}>
+          {/* Front face - skin */}
           <mesh castShadow>
-            <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color={skinColor} />
+            <sphereGeometry args={[0.2, 20, 20, 0, Math.PI * 2, 0, Math.PI]} />
+            <meshStandardMaterial color={skinColor} roughness={0.5} />
           </mesh>
-          {/* 수영모 */}
-          <mesh position={[0, 0.05, 0]} rotation={[-0.1, 0, 0]}>
-            <sphereGeometry args={[0.205, 16, 16, 0, Math.PI * 2, 0, Math.PI / 1.8]} />
-            <meshStandardMaterial color={swimmer.capColor} roughness={0.4} />
+          {/* Back of head - dark / black */}
+          <mesh castShadow position={[0, 0, -0.01]}>
+            <sphereGeometry args={[0.205, 20, 20, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+            <meshStandardMaterial color="#111111" roughness={0.6} />
           </mesh>
-          {/* 수경 */}
-          <mesh position={[0, -0.04, 0.18]}>
-            <torusGeometry args={[0.07, 0.025, 8, 20]} />
-            <meshStandardMaterial color="#222" metalness={0.5} roughness={0.2} />
+          {/* Swim cap (dome over top) */}
+          <mesh position={[0, 0.04, 0]} rotation={[-0.08, 0, 0]}>
+            <sphereGeometry args={[0.208, 20, 20, 0, Math.PI * 2, 0, Math.PI / 1.9]} />
+            <meshStandardMaterial color={swimmer.capColor} roughness={0.35} metalness={0.1} />
+          </mesh>
+          {/* Goggles (small torus around eyes) */}
+          <mesh position={[-0.07, -0.04, 0.17]} rotation={[0, 0.15, Math.PI / 2]}>
+            <torusGeometry args={[0.04, 0.018, 8, 18]} />
+            <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.2} />
+          </mesh>
+          <mesh position={[0.07, -0.04, 0.17]} rotation={[0, -0.15, Math.PI / 2]}>
+            <torusGeometry args={[0.04, 0.018, 8, 18]} />
+            <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.2} />
           </mesh>
         </group>
 
-        {/* 왼팔 - 상완 그룹 (어깨에서 회전) */}
-        <group ref={leftUpperArm} position={[-0.28, 0.28, 0]}>
-          {/* 상완 */}
-          <mesh position={[0, -0.2, 0]} castShadow>
-            <capsuleGeometry args={[0.075, 0.35, 4, 8]} />
-            <meshStandardMaterial color={skinColor} roughness={0.4} />
+        {/* LEFT ARM — shoulder pivot */}
+        <group ref={leftUpperArm} position={[-0.27, 0.28, 0]}>
+          {/* Upper arm */}
+          <mesh position={[0, -0.21, 0]} castShadow>
+            <capsuleGeometry args={[0.072, 0.37, 4, 8]} />
+            <meshStandardMaterial color={skinColor} roughness={0.45} />
           </mesh>
-          {/* 팔꿈치 관절 위치에 하완 그룹 */}
-          <group ref={leftForearmGroup} position={[0, -0.42, 0]}>
-            {/* 하완 */}
+          {/* Elbow pivot */}
+          <group ref={leftForearm} position={[0, -0.44, 0]}>
+            {/* Forearm */}
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.06, 0.3, 4, 8]} />
-              <meshStandardMaterial color={skinColor} roughness={0.4} />
+              <capsuleGeometry args={[0.058, 0.3, 4, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.45} />
             </mesh>
-            {/* 손 */}
-            <mesh position={[0, -0.34, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.07, 0.16]} />
+            {/* Hand */}
+            <mesh position={[0, -0.33, 0.03]} castShadow>
+              <boxGeometry args={[0.12, 0.07, 0.18]} />
               <meshStandardMaterial color={skinColor} roughness={0.5} />
             </mesh>
           </group>
         </group>
 
-        {/* 오른팔 */}
-        <group ref={rightUpperArm} position={[0.28, 0.28, 0]}>
-          <mesh position={[0, -0.2, 0]} castShadow>
-            <capsuleGeometry args={[0.075, 0.35, 4, 8]} />
-            <meshStandardMaterial color={skinColor} roughness={0.4} />
+        {/* RIGHT ARM */}
+        <group ref={rightUpperArm} position={[0.27, 0.28, 0]}>
+          <mesh position={[0, -0.21, 0]} castShadow>
+            <capsuleGeometry args={[0.072, 0.37, 4, 8]} />
+            <meshStandardMaterial color={skinColor} roughness={0.45} />
           </mesh>
-          <group ref={rightForearmGroup} position={[0, -0.42, 0]}>
+          <group ref={rightForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.06, 0.3, 4, 8]} />
-              <meshStandardMaterial color={skinColor} roughness={0.4} />
+              <capsuleGeometry args={[0.058, 0.3, 4, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.45} />
             </mesh>
-            <mesh position={[0, -0.34, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.07, 0.16]} />
+            <mesh position={[0, -0.33, 0.03]} castShadow>
+              <boxGeometry args={[0.12, 0.07, 0.18]} />
               <meshStandardMaterial color={skinColor} roughness={0.5} />
             </mesh>
           </group>
         </group>
 
-        {/* 왼다리 - 허벅지 그룹 (엉덩이에서 회전) */}
-        <group ref={leftUpperLeg} position={[-0.12, -0.24, 0]}>
-          {/* 허벅지 */}
-          <mesh position={[0, -0.24, 0]} castShadow>
-            <capsuleGeometry args={[0.095, 0.42, 4, 8]} />
-            <meshStandardMaterial color={swimmer.color} roughness={0.4} />
+        {/* LEFT LEG — hip pivot */}
+        <group ref={leftUpperLeg} position={[-0.11, -0.26, 0]}>
+          {/* Thigh */}
+          <mesh position={[0, -0.25, 0]} castShadow>
+            <capsuleGeometry args={[0.092, 0.43, 4, 8]} />
+            <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
-          {/* 무릎 관절 위치에 종아리 그룹 */}
-          <group ref={leftCalfGroup} position={[0, -0.5, 0]}>
-            {/* 종아리 */}
+          {/* Knee pivot */}
+          <group ref={leftCalf} position={[0, -0.52, 0]}>
+            {/* Calf */}
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.36, 4, 8]} />
-              <meshStandardMaterial color={skinColor} roughness={0.4} />
+              <capsuleGeometry args={[0.07, 0.36, 4, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.45} />
             </mesh>
-            {/* 발 */}
-            <mesh position={[0, -0.39, 0.08]} castShadow rotation={[0.3, 0, 0]}>
+            {/* Foot */}
+            <mesh position={[0, -0.4, 0.07]} castShadow rotation={[0.25, 0, 0]}>
               <boxGeometry args={[0.1, 0.07, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.5} />
             </mesh>
           </group>
         </group>
 
-        {/* 오른다리 */}
-        <group ref={rightUpperLeg} position={[0.12, -0.24, 0]}>
-          <mesh position={[0, -0.24, 0]} castShadow>
-            <capsuleGeometry args={[0.095, 0.42, 4, 8]} />
-            <meshStandardMaterial color={swimmer.color} roughness={0.4} />
+        {/* RIGHT LEG */}
+        <group ref={rightUpperLeg} position={[0.11, -0.26, 0]}>
+          <mesh position={[0, -0.25, 0]} castShadow>
+            <capsuleGeometry args={[0.092, 0.43, 4, 8]} />
+            <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
-          <group ref={rightCalfGroup} position={[0, -0.5, 0]}>
+          <group ref={rightCalf} position={[0, -0.52, 0]}>
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.36, 4, 8]} />
-              <meshStandardMaterial color={skinColor} roughness={0.4} />
+              <capsuleGeometry args={[0.07, 0.36, 4, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.45} />
             </mesh>
-            <mesh position={[0, -0.39, 0.08]} castShadow rotation={[0.3, 0, 0]}>
+            <mesh position={[0, -0.4, 0.07]} castShadow rotation={[0.25, 0, 0]}>
               <boxGeometry args={[0.1, 0.07, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.5} />
             </mesh>
