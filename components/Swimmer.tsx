@@ -41,7 +41,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const laneX = getLaneX(swimmer.lane, totalSwimmers, laneWidth);
   const animMult = useRef(0.85 + Math.random() * 0.35);
 
-  const skinColor = '#ffdbac'; // Bright vivid natural skin tone
+  const skinColor = '#ffdbac'; // Natural bright skin tone
   const swimColor = swimmer.color || '#2563eb';
 
   // Number Badge Texture
@@ -123,7 +123,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
     }
 
     // ---- READY ----
-    if (appState === AppState.READY) {
+    if (appState === AppState.READY || appState === AppState.GREETING || appState === AppState.PREPARING) {
       group.current.position.set(laneX, onBlockY, startZ);
       group.current.rotation.y = Math.PI;
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
@@ -280,22 +280,22 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           <spriteMaterial map={nameplateTexture} depthTest={false} />
         </sprite>
 
-        {/* Athletic Torso - Broad Rounded Oval Upper Chest (양쪽으로 넓은 둥근 수영선수 원형 상체) */}
+        {/* Athletic Torso - Broad Straight Athletic Deltoids (NO ROUND BALL SPHERES!) */}
         <group position={[0, 0.2, 0]}>
-          <mesh castShadow position={[0, 0.28, 0]} scale={[1.42, 1.0, 1.05]}>
-            <cylinderGeometry args={[0.34, 0.26, 0.38, 32]} />
+          <mesh castShadow position={[0, 0.30, 0]}>
+            <boxGeometry args={[0.72, 0.34, 0.36]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
-          <mesh castShadow position={[-0.15, 0.34, 0.08]} rotation={[0.1, 0, 0]}>
-            <sphereGeometry args={[0.17, 24, 16]} />
+          <mesh castShadow position={[-0.14, 0.32, 0.14]} rotation={[0.1, 0, 0]}>
+            <boxGeometry args={[0.26, 0.20, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
-          <mesh castShadow position={[0.15, 0.34, 0.08]} rotation={[0.1, 0, 0]}>
-            <sphereGeometry args={[0.17, 24, 16]} />
+          <mesh castShadow position={[0.14, 0.32, 0.14]} rotation={[0.1, 0, 0]}>
+            <boxGeometry args={[0.26, 0.20, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
-          <mesh castShadow position={[0, -0.06, 0]}>
-            <cylinderGeometry args={[0.27, 0.22, 0.32, 24]} />
+          <mesh castShadow position={[0, -0.04, 0]}>
+            <cylinderGeometry args={[0.27, 0.22, 0.34, 24]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
         </group>
@@ -352,16 +352,16 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         {/* LEFT ARM */}
         <group ref={leftUpperArm} position={[-0.36, 0.44, 0]}>
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[0.09, 12, 12]} />
+            <sphereGeometry args={[0.08, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <mesh position={[0, -0.21, 0]} castShadow>
-            <capsuleGeometry args={[0.07, 0.36, 6, 12]} />
+            <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={leftForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.058, 0.32, 6, 12]} />
+              <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.34, 0.03]} castShadow>
@@ -374,16 +374,16 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         {/* RIGHT ARM */}
         <group ref={rightUpperArm} position={[0.36, 0.44, 0]}>
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[0.09, 12, 12]} />
+            <sphereGeometry args={[0.08, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <mesh position={[0, -0.21, 0]} castShadow>
-            <capsuleGeometry args={[0.07, 0.36, 6, 12]} />
+            <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={rightForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.058, 0.32, 6, 12]} />
+              <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.34, 0.03]} castShadow>
@@ -396,12 +396,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         {/* LEFT LEG & FOOT */}
         <group ref={leftUpperLeg} position={[-0.14, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
-            <capsuleGeometry args={[0.09, 0.42, 6, 12]} />
+            <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
           <group ref={leftCalf} position={[0, -0.52, 0]}>
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.07, 0.38, 6, 12]} />
+              <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
@@ -414,12 +414,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         {/* RIGHT LEG & FOOT */}
         <group ref={rightUpperLeg} position={[0.14, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
-            <capsuleGeometry args={[0.09, 0.42, 6, 12]} />
+            <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
           <group ref={rightCalf} position={[0, -0.52, 0]}>
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.07, 0.38, 6, 12]} />
+              <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
