@@ -90,7 +90,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     }
   }, [appState]);
 
-  // Open modal with batch text synced
   const handleOpenNameModal = () => {
     setBatchText(swimmerNames.slice(0, count).map((n, i) => n || `${i + 1}번`).join(', '));
     setShowNameModal(true);
@@ -120,7 +119,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     onUpdateAllNames(names);
   };
 
-  // Sort lotto winning numbers for tidy presentation
   const sortedWinningNumbers = [...results.slice(0, 6)].map(s => s.id).sort((a, b) => a - b);
 
   const handleCopyNumbers = () => {
@@ -158,30 +156,30 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         )}
       </div>
 
-      {/* Intro / Greeting Stage Overlay */}
+      {/* Intro / Greeting Stage Overlay (Clean transparent, no black screen overlay!) */}
       {appState === AppState.GREETING && (
-        <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-auto animate-in fade-in zoom-in duration-500 bg-black/20 backdrop-blur-sm z-20">
+        <div className="fixed bottom-12 inset-x-0 flex flex-col items-center justify-center pointer-events-auto z-20">
           <div className="text-center max-w-xl px-6">
             {count <= 10 && currentIdx !== -1 && (
-              <div className="bg-slate-950/80 backdrop-blur-2xl border border-cyan-400/40 px-12 py-8 rounded-[3rem] shadow-[0_0_80px_rgba(6,182,212,0.4)]">
-                <p className="text-cyan-400 font-black text-sm uppercase tracking-[0.5em] mb-2 animate-pulse">
+              <div className="bg-slate-950/85 backdrop-blur-2xl border border-cyan-400/40 px-10 py-5 rounded-[2.5rem] shadow-[0_0_80px_rgba(6,182,212,0.4)]">
+                <p className="text-cyan-400 font-black text-xs uppercase tracking-[0.5em] mb-1 animate-pulse">
                   Lane #{currentIdx + 1}
                 </p>
-                <h2 className="text-white text-5xl md:text-7xl font-black italic tracking-tight drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)]">
+                <h2 className="text-white text-3xl md:text-5xl font-black italic tracking-tight drop-shadow-md">
                   {swimmerNames[currentIdx] || `${currentIdx + 1}번 선수`}
                 </h2>
               </div>
             )}
 
             {count > 10 && (
-              <div className="bg-slate-950/85 backdrop-blur-2xl border border-amber-400/40 px-10 py-8 rounded-[3rem] shadow-[0_0_80px_rgba(245,158,11,0.4)]">
+              <div className="bg-slate-950/85 backdrop-blur-2xl border border-amber-400/40 px-10 py-6 rounded-[2.5rem] shadow-[0_0_80px_rgba(245,158,11,0.4)]">
                 <span className="px-4 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full font-black text-xs uppercase tracking-widest">
                   🔥 45인 초대형 로또 레이스
                 </span>
-                <h2 className="text-white text-4xl md:text-6xl font-black italic tracking-tight mt-3 mb-2">
+                <h2 className="text-white text-3xl md:text-5xl font-black italic tracking-tight mt-2 mb-1">
                   45인의 전사들 입장!
                 </h2>
-                <p className="text-cyan-300 font-semibold text-sm">
+                <p className="text-cyan-300 font-semibold text-xs">
                   1위부터 6위까지만 완주 인정! 39명은 현장에서 쓰러집니다.
                 </p>
               </div>
@@ -189,7 +187,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 
             <button
               onClick={onSkipGreeting}
-              className="mt-6 px-8 py-3.5 bg-white/20 hover:bg-white/30 text-white font-black text-xs uppercase tracking-[0.3em] rounded-full backdrop-blur-md border border-white/40 shadow-xl transition-all active:scale-95"
+              className="mt-4 px-7 py-3 bg-white/20 hover:bg-white/30 text-white font-black text-xs uppercase tracking-[0.25em] rounded-full backdrop-blur-md border border-white/40 shadow-xl transition-all active:scale-95"
             >
               ⏩ 바로 출발대로 가기 (스킵)
             </button>
@@ -210,7 +208,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 <p className="text-xs text-slate-400 font-medium">참가자 수를 정하고 이름을 입력하세요</p>
               </div>
 
-              {/* Lotto Quick Select Button */}
               <button 
                 onClick={onSelectLottoMode}
                 className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shadow-lg ${
@@ -241,7 +238,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 >+</button>
               </div>
 
-              {/* "이름쓰기" Button (Direct & Prominent!) */}
               <button
                 onClick={handleOpenNameModal}
                 className="px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-black rounded-xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all flex items-center gap-2 border border-cyan-300/40"
@@ -318,11 +314,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           </div>
         )}
 
-        {/* FINISHED: Results & Lotto Podium */}
+        {/* FINISHED */}
         {appState === AppState.FINISHED && (
           <div className="bg-slate-900/95 backdrop-blur-3xl p-6 md:p-7 rounded-[2.5rem] shadow-2xl border border-cyan-500/30 border-t-[8px] border-t-cyan-500 w-full animate-in slide-in-from-bottom duration-500 max-h-[85vh] flex flex-col">
              
-             {/* Header */}
              <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800 shrink-0">
                 <div>
                   <h2 className="text-white text-xl font-black italic uppercase leading-none">
@@ -337,7 +332,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 </div>
              </div>
 
-             {/* Lotto Numbers Sorted Bar */}
              {(isLottoMode || count === 45) && (
                <div className="mb-4 bg-slate-950 p-3.5 rounded-2xl border border-amber-500/30 shrink-0">
                  <div className="flex justify-between items-center mb-2">
@@ -366,7 +360,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                </div>
              )}
 
-             {/* Result List */}
              <div className="space-y-2.5 overflow-y-auto pr-1 custom-scrollbar flex-1 max-h-[260px]">
                 {results.map((s, idx) => {
                   const lotto = getLottoColor(s.id);
@@ -382,7 +375,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3.5">
-                         {/* Rank / Number Badge */}
                          <div 
                            style={{ backgroundColor: lotto.bg }}
                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-base shadow-md border border-white/30 shrink-0"
@@ -405,7 +397,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                   );
                 })}
 
-                {/* Fallen Commentary for Lotto Mode */}
                 {(isLottoMode || count === 45) && (
                   <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-2xl text-center">
                     <p className="text-xs font-bold text-red-400">
@@ -415,7 +406,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 )}
              </div>
 
-             {/* Reset Button */}
              <button 
               onClick={onReset}
               className="w-full mt-4 py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl transition-all uppercase tracking-[0.3em] text-xs active:scale-95 border border-slate-700 shadow-xl shrink-0"
@@ -426,17 +416,16 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         )}
       </div>
 
-      {/* Footer Version */}
+      {/* Footer */}
       <div className="w-full text-center py-2">
         <p className="text-white/30 text-[9px] font-black tracking-[1.2em] uppercase">AQUA-LOTTO 3D ENGINE</p>
       </div>
 
-      {/* ================= MODAL: 선수 이름쓰기 / 명단 입력 ================= */}
+      {/* MODAL */}
       {showNameModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md pointer-events-auto animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-cyan-500/40 w-full max-w-lg rounded-[2.5rem] shadow-2xl p-6 md:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             
-            {/* Modal Header */}
             <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-800">
               <div>
                 <h3 className="text-white font-black text-xl flex items-center gap-2">
@@ -455,7 +444,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 mb-4 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
               <button
                 onClick={() => setModalTab('individual')}
@@ -479,7 +467,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </button>
             </div>
 
-            {/* Tab 1: Individual Inputs */}
             {modalTab === 'individual' && (
               <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 custom-scrollbar min-h-[220px]">
                 {swimmerNames.slice(0, count).map((name, idx) => (
@@ -499,7 +486,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </div>
             )}
 
-            {/* Tab 2: Batch Paste Textarea */}
             {modalTab === 'batch' && (
               <div className="flex-1 flex flex-col min-h-[220px]">
                 <p className="text-slate-400 text-xs mb-2">
@@ -521,7 +507,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </div>
             )}
 
-            {/* Quick Actions Footer */}
             <div className="mt-4 pt-3 border-t border-slate-800 flex flex-wrap justify-between items-center gap-2">
               <div className="flex gap-2">
                 <button
@@ -550,7 +535,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
       )}
 
-      {/* Custom Scrollbar CSS */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 12px; }

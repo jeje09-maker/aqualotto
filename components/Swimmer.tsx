@@ -33,8 +33,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const startTime = useRef(0);
   const collapseAnimProgress = useRef(0);
 
-  const startZ = 2.2;
-  const finishZ = -52.4;
+  const startZ = 3.6; // Starting Block platform position on deck
+  const finishZ = -52.4; // Touchpad position
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
@@ -213,13 +213,15 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM Pose: Swimmers flipped 180° so head leads forward towards -Z, belly faces down into water, cap & back face UP to camera!
+          // SWIM Pose: rotation (-Math.PI/2, Math.PI, 0)
+          // Head (0,1,0) points FORWARD to -Z.
+          // Chest & Toes (0,0,1) point DOWN into water -Y.
+          // Back & Swim Cap (0,0,-1) point UP to camera +Y.
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
           
-          // 180° Rotation Fix
-          group.current.rotation.set(Math.PI / 2, Math.PI, 0);
+          group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
 
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
@@ -290,12 +292,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
         {/* Athletic Torso - Chest & Abs Muscular Contours */}
         <group position={[0, 0.2, 0]}>
-          {/* Upper Chest / Broad Shoulders */}
           <mesh castShadow position={[0, 0.25, 0]}>
             <cylinderGeometry args={[0.32, 0.26, 0.38, 16]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
-          {/* Pectoral Muscle Contours */}
           <mesh castShadow position={[-0.11, 0.32, 0.1]} rotation={[0.1, 0, 0]}>
             <boxGeometry args={[0.18, 0.16, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
@@ -304,7 +304,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             <boxGeometry args={[0.18, 0.16, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
-          {/* Lower Torso / Tapered Waist */}
           <mesh castShadow position={[0, -0.06, 0]}>
             <cylinderGeometry args={[0.26, 0.22, 0.32, 16]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
@@ -317,12 +316,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             <cylinderGeometry args={[0.23, 0.21, 0.35, 16]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} metalness={0.2} />
           </mesh>
-          {/* Elastic Waistband */}
           <mesh position={[0, 0.15, 0]}>
             <torusGeometry args={[0.235, 0.02, 8, 20]} />
             <meshStandardMaterial color={swimmer.capColor || '#ffffff'} roughness={0.3} />
           </mesh>
-          {/* Lotto Number Badge */}
           <mesh position={[0, 0.02, 0.22]} rotation={[0, 0, 0]}>
             <planeGeometry args={[0.16, 0.16]} />
             <meshStandardMaterial map={numberTexture} transparent roughness={0.5} />
@@ -336,19 +333,16 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             <meshStandardMaterial color={skinColor} roughness={0.4} />
           </mesh>
           
-          {/* Silicone Swim Cap */}
           <mesh position={[0, 0.04, -0.01]} rotation={[-0.1, 0, 0]}>
             <sphereGeometry args={[0.198, 24, 24, 0, Math.PI * 2, 0, Math.PI / 1.7]} />
             <meshStandardMaterial color={swimmer.capColor || swimColor} roughness={0.25} metalness={0.25} />
           </mesh>
 
-          {/* Number on Swim Cap Side */}
           <mesh position={[0.18, 0.05, 0]} rotation={[0, Math.PI / 2, 0]}>
             <planeGeometry args={[0.14, 0.14]} />
             <meshStandardMaterial map={numberTexture} transparent roughness={0.4} />
           </mesh>
 
-          {/* Racing Goggles */}
           <group position={[0, -0.02, 0.16]}>
             <mesh position={[-0.065, 0, 0]} rotation={[0, 0.2, 0]}>
               <boxGeometry args={[0.08, 0.05, 0.04]} />
@@ -409,7 +403,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           </group>
         </group>
 
-        {/* LEFT LEG */}
+        {/* LEFT LEG & FOOT */}
         <group ref={leftUpperLeg} position={[-0.13, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
             <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
@@ -420,14 +414,15 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            <mesh position={[0, -0.42, 0.08]} castShadow rotation={[0.2, 0, 0]}>
+            {/* Foot extending back in streamline pose */}
+            <mesh position={[0, -0.42, -0.06]} castShadow rotation={[-0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
             </mesh>
           </group>
         </group>
 
-        {/* RIGHT LEG */}
+        {/* RIGHT LEG & FOOT */}
         <group ref={rightUpperLeg} position={[0.13, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
             <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
@@ -438,7 +433,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            <mesh position={[0, -0.42, 0.08]} castShadow rotation={[0.2, 0, 0]}>
+            {/* Foot extending back in streamline pose */}
+            <mesh position={[0, -0.42, -0.06]} castShadow rotation={[-0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
             </mesh>
