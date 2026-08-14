@@ -178,8 +178,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // CONTINUOUS SMOOTH FLUID DIVE & SUBMERGED SWIM POSITIONS
-        const diveThreshold = 0.08;
+        // ================= 1. DIVE & 2-SECOND UNDERWATER DOLPHIN GLIDE =================
+        // diveThreshold = 0.14: Approx 2.0 seconds of underwater dive & streamline dolphin glide before breakout!
+        const diveThreshold = 0.14;
         group.current.position.x = laneX;
         group.current.position.z = startZ - nextProgress * poolLength;
 
@@ -189,26 +190,28 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           let jumpHeight: number;
           let divePitch: number;
 
-          if (diveT < 0.3) {
-            const tNorm = diveT / 0.3;
+          if (diveT < 0.25) {
+            // Stage 1: Launch off block into air
+            const tNorm = diveT / 0.25;
             jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.6;
             divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.38, tNorm);
-          } else if (diveT < 0.7) {
-            const tNorm = (diveT - 0.3) / 0.4;
-            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.6 - tNorm * 1.7;
+          } else if (diveT < 0.55) {
+            // Stage 2: Plunge head-first into water (Y = -0.75m submerged)
+            const tNorm = (diveT - 0.25) / 0.30;
+            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.6 - tNorm * 1.8;
             divePitch = THREE.MathUtils.lerp(-Math.PI * 0.38, -Math.PI * 0.68, tNorm);
           } else {
-            const tNorm = (diveT - 0.7) / 0.3;
-            // Smoothly level off into submerged swim depth (Y = -0.35)
-            jumpHeight = -1.1 - tNorm * 1.67;
+            // Stage 3: Hold 2-second underwater dolphin glide (Y = -0.75m), then ascend smoothly to breakout Y = -0.15m!
+            const tNorm = (diveT - 0.55) / 0.45;
+            jumpHeight = -1.2 + tNorm * 0.6; // Submerged glide -> ascending to breakout
             divePitch = THREE.MathUtils.lerp(-Math.PI * 0.68, -Math.PI * 0.50, tNorm);
           }
 
           group.current.position.y = onBlockY + jumpHeight;
-          // Fixed Y & Z rotation (ZERO left-right wobble!)
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
+          // Streamlined hands extended straight forward over head!
           if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0);
           if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
@@ -218,17 +221,18 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SUBMERGED SWIM DEPTH (Y = -0.35: Swimmer submerged nicely underwater!)
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.35, 0.2);
+          // ================= 2. BREAKOUT SURFACE SWIM & PADDLE STROKE =================
+          // Y = -0.15m: Head & swim cap 50% clearly visible above water surface (Y = 0.05m)!
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.2);
           
-          // LASER-STRAIGHT FORWARD ORIENTATION (Rotations Y=PI, Z=0 FIXED!)
+          // LASER-STRAIGHT FORWARD ORIENTATION (Y=PI, Z=0 FIXED, ZERO WOBBLE!)
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
 
           const swimSpeed = Math.max(3.0, Math.min(12, (5.0 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
-          // Freestyle arm strokes (ZERO Z-wobble!)
+          // Straight extended arm & hand paddle stroke (ZERO 90° wrist kink!)
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
@@ -241,13 +245,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
             }
             armUpperRef.current.rotation.x = -armX * 0.95;
-            armUpperRef.current.rotation.z = 0; // ZERO Z-wobble!
+            armUpperRef.current.rotation.z = 0;
 
+            // Straight paddle forearm: Max 12 degrees slight natural angle, ZERO 90° kink!
             let elbowBend: number;
             if (norm < 0.5) {
-              elbowBend = Math.sin(norm * Math.PI * 2) * (Math.PI / 2.0);
+              elbowBend = Math.sin(norm * Math.PI * 2) * 0.20;
             } else {
-              elbowBend = Math.sin((norm - 0.5) * Math.PI) * 0.6;
+              elbowBend = Math.sin((norm - 0.5) * Math.PI) * 0.15;
             }
             armForearmRef.current.rotation.x = elbowBend;
           };
@@ -262,7 +267,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             if (!legUpperRef.current || !legCalfRef.current) return;
             const legSin = Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = Math.max(0, legSin) * 0.32 + 0.05;
-            legUpperRef.current.rotation.z = 0; // ZERO Z-wobble!
+            legUpperRef.current.rotation.z = 0;
             const kneeBend = Math.max(0, legSin) * 0.45;
             legCalfRef.current.rotation.x = kneeBend;
           };
@@ -435,7 +440,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       </group>
 
       {/* Dynamic Water Splash ONLY WHEN IN WATER */}
-      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.075 && progress < 0.98 && (
+      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.10 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}
     </group>
