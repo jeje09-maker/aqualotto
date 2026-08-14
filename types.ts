@@ -22,4 +22,7 @@ export interface Swimmer {
   rank?: number;
   color: string;
   capColor: string;
+  isCollapsed?: boolean;
+  laneWidth?: number;
 }
+

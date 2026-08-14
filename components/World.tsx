@@ -18,7 +18,6 @@ interface WorldProps {
 
 // Cinematic camera shots during race
 const RACE_SHOTS = [
-  // id, duration (s), getPos(cx,cz,t), getTarget(cx,cz,t)
   { id: 'side_high',    dur: 4.5 },
   { id: 'in_water',     dur: 3.5 },
   { id: 'top_down',     dur: 3.0 },
@@ -34,6 +33,9 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   const raceStartRef = useRef(0);
   const finishedIds = useRef<Set<number>>(new Set());
   const [currentIntroIdx, setCurrentIntroIdx] = useState(-1);
+
+  const count = swimmers.length;
+  const laneWidth = count > 15 ? 2.2 : 3;
 
   const camPos = useRef(new THREE.Vector3(30, 20, 30));
   const camTarget = useRef(new THREE.Vector3(0, 0, 0));
@@ -56,28 +58,29 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   }, [appState]);
 
   useFrame((state, delta) => {
+    if (!camera) return;
     const t = state.clock.getElapsedTime();
+    const poolSpan = Math.max(12, count * laneWidth);
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
-      // Slow orbit — always stays high enough to see pool
       const angle = t * 0.1;
-      const r = 36;
-      camPos.current.lerp(new THREE.Vector3(Math.sin(angle) * r, 20, Math.cos(angle) * r - 10), 0.04);
+      const r = Math.max(36, poolSpan * 0.7);
+      camPos.current.lerp(new THREE.Vector3(Math.sin(angle) * r, Math.max(20, poolSpan * 0.35), Math.cos(angle) * r - 10), 0.04);
       camTarget.current.lerp(new THREE.Vector3(0, 1, -15), 0.06);
     }
 
     // ---- GREETING ----
     else if (appState === AppState.GREETING) {
       stateTimer.current += delta;
-      const introDuration = 2.5;
+      const introDuration = count > 10 ? 1.0 : 2.5;
       const idx = Math.floor(stateTimer.current / introDuration);
-      if (idx < swimmers.length) {
+      if (idx < count && (count <= 10 || idx < 6)) {
         if (idx !== currentIntroIdx) setCurrentIntroIdx(idx);
         const s = swimmers[idx];
-        const targetX = s.lane * 3;
-        camTarget.current.lerp(new THREE.Vector3(targetX, 2.5, 2.2), 0.12);
-        camPos.current.lerp(new THREE.Vector3(targetX + 3, 4.0, 7), 0.06);
+        const targetX = s.lane * laneWidth;
+        camTarget.current.lerp(new THREE.Vector3(targetX, 2.5, 2.2), 0.15);
+        camPos.current.lerp(new THREE.Vector3(targetX + 3, 4.0, 7), 0.08);
       } else {
         onStateTransition(AppState.PREPARING);
         stateTimer.current = 0;
@@ -88,14 +91,14 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
     else if (appState === AppState.PREPARING) {
       stateTimer.current += delta;
       camTarget.current.lerp(new THREE.Vector3(0, 1, 0), 0.05);
-      camPos.current.lerp(new THREE.Vector3(15, 10, 15), 0.03);
+      camPos.current.lerp(new THREE.Vector3(Math.max(15, poolSpan * 0.4), Math.max(12, poolSpan * 0.25), 18), 0.03);
       if (stateTimer.current > 2.0) onStateTransition(AppState.READY);
     }
 
     // ---- READY ----
     else if (appState === AppState.READY) {
       camTarget.current.lerp(new THREE.Vector3(0, 0.5, 1.5), 0.1);
-      camPos.current.lerp(new THREE.Vector3(0, 5, 12), 0.05);
+      camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
 
     // ---- RACING — cinematic multi-angle cuts ----
@@ -109,11 +112,10 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
         const p = Math.min(elapsed * s.speed, 1);
         maxProgress = Math.max(maxProgress, p);
         centerZ += 2.2 - p * 54.6;
-        centerX += s.lane * 3;
+        centerX += s.lane * laneWidth;
       });
       centerX /= swimmers.length;
       centerZ /= swimmers.length;
-      // Clamp center to pool bounds
       centerZ = Math.max(-52, Math.min(3, centerZ));
 
       // Advance shot timer
@@ -125,23 +127,22 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       }
       const shot = RACE_SHOTS[shotIdx.current % RACE_SHOTS.length];
       const ls = 0.055;
-      const width = Math.max(4, swimmers.length * 3);
+      const width = Math.max(6, poolSpan * 0.5);
 
       switch (shot.id) {
         case 'side_high': {
-          camPos.current.lerp(new THREE.Vector3(centerX + width + 14, 14, centerZ + 4), ls);
+          camPos.current.lerp(new THREE.Vector3(centerX + width + 14, Math.max(14, poolSpan * 0.25), centerZ + 4), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ), ls * 1.4);
           break;
         }
         case 'in_water': {
-          // Between lanes — just at/above water surface, never underground
-          const lane0X = swimmers[0] ? swimmers[0].lane * 3 : 0;
-          camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, 0.5, centerZ + 7), ls);
+          const lane0X = swimmers[0] ? swimmers[0].lane * laneWidth : 0;
+          camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, 0.8, centerZ + 8), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 5), ls * 1.6);
           break;
         }
         case 'top_down': {
-          camPos.current.lerp(new THREE.Vector3(centerX, 22, centerZ), ls);
+          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(24, poolSpan * 0.6), centerZ), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ - 2), ls * 1.2);
           break;
         }
@@ -153,23 +154,23 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
           }, swimmers[0]);
           const leaderP = Math.min(elapsed * leader.speed, 1);
           const leaderZ = Math.max(-50, 2.2 - leaderP * 54.6);
-          const leaderX = leader.lane * 3;
-          camPos.current.lerp(new THREE.Vector3(leaderX + 2, 4, leaderZ + 10), ls * 0.9);
+          const leaderX = leader.lane * laneWidth;
+          camPos.current.lerp(new THREE.Vector3(leaderX + 3, 5, leaderZ + 12), ls * 0.9);
           camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 4), ls * 1.5);
           break;
         }
         case 'side_low': {
-          camPos.current.lerp(new THREE.Vector3(centerX - (width + 8), 2.5, centerZ), ls);
+          camPos.current.lerp(new THREE.Vector3(centerX - (width + 8), 3.5, centerZ), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ), ls * 1.4);
           break;
         }
         case 'front_head': {
-          camPos.current.lerp(new THREE.Vector3(centerX, 7, centerZ - 16), ls);
+          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(8, poolSpan * 0.18), centerZ - 18), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ + 6), ls * 1.2);
           break;
         }
         case 'behind': {
-          camPos.current.lerp(new THREE.Vector3(centerX, 9, centerZ + 16), ls);
+          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(10, poolSpan * 0.2), centerZ + 18), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 4), ls * 1.2);
           break;
         }
@@ -178,7 +179,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- FINISHED ----
     else if (appState === AppState.FINISHED) {
-      camPos.current.lerp(new THREE.Vector3(15, 12, -45), 0.04);
+      camPos.current.lerp(new THREE.Vector3(Math.max(16, poolSpan * 0.3), 14, -43), 0.04);
       camTarget.current.lerp(new THREE.Vector3(0, 0, -53), 0.04);
     }
 
@@ -189,7 +190,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   return (
     <group>
       <SoundManager appState={appState} />
-      <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
+      <directionalLight position={[10, 25, 10]} intensity={1.5} castShadow />
       <pointLight position={[0, 8, -26]} intensity={0.8} color="#aadeff" />
       <SwimmingPool count={swimmers.length} />
       <Crowd swimmersCount={swimmers.length} />
@@ -199,6 +200,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
           key={s.id}
           swimmer={s}
           appState={appState}
+          laneWidth={laneWidth}
           isCurrentIntro={idx === currentIntroIdx}
           onReachedEnd={() => {
             if (!finishedIds.current.has(s.id)) {
@@ -213,3 +215,4 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 };
 
 export default World;
+

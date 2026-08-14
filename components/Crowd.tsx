@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
-  const laneWidth = 3;
+  const laneWidth = swimmersCount > 15 ? 2.2 : 3;
   const poolWidth = swimmersCount * laneWidth + 2;
   const rowCount = 6;
   const rowSpacing = 1.1;
