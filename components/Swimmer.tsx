@@ -177,21 +177,43 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        const diveThreshold = 0.065;
+        // REALISTIC HEAD-FIRST PARABOLIC DIVE (Head & Hands enter water FIRST, Feet high in air behind!)
+        const diveThreshold = 0.075;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           
-          const diveDistance = diveT * 4.8;
+          // Propel 5.2 meters far forward horizontally
+          const diveDistance = diveT * 5.2;
           group.current.position.z = startZ - diveDistance;
           
-          const jumpHeight = Math.sin(diveT * Math.PI) * 0.5;
-          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY - 0.02);
-          
-          const divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.36, diveT);
+          // Stage 1: Arc upward off starting block into air (diveT < 0.3)
+          // Stage 2: Plunge head-first downward into water (diveT 0.3 ~ 0.75)
+          // Stage 3: Smooth underwater level-off into swim pose (diveT > 0.75)
+          let jumpHeight: number;
+          let divePitch: number;
+
+          if (diveT < 0.3) {
+            const tNorm = diveT / 0.3;
+            jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.7; // Arc up into air
+            divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.40, tNorm);
+          } else if (diveT < 0.75) {
+            const tNorm = (diveT - 0.3) / 0.45;
+            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.7 - tNorm * 1.8;
+            // Pitch reaches -0.72pi (-130°)! Head & hands plunge into water FIRST, feet high in air trailing!
+            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.40, -Math.PI * 0.72, tNorm);
+          } else {
+            const tNorm = (diveT - 0.75) / 0.25;
+            jumpHeight = -1.1 + tNorm * 1.12;
+            // Level off smoothly underwater into horizontal swim pose (-0.50pi)
+            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.72, -Math.PI * 0.50, tNorm);
+          }
+
+          group.current.position.y = onBlockY + jumpHeight;
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
+          // Streamlined arms extended straight forward over head!
           if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.98, 0, -0.05);
           if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0.05);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
@@ -201,7 +223,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // PERFECT SURFACE WATER DRAFTING POSITION (Y = 0.02 -> Swim cap 50% above water, shoulders break water!)
+          // SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, 0.02, 0.3);
@@ -253,7 +275,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           computeLeg(0, leftUpperLeg, leftCalf);
           computeLeg(Math.PI, rightUpperLeg, rightCalf);
 
-          // Body roll during freestyle stroke (shoulders break above water rhythmically!)
           if (body.current) {
             body.current.rotation.z = Math.sin(cycle * 0.5) * 0.28;
           }
@@ -423,7 +444,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       </group>
 
       {/* Dynamic Water Splash ONLY WHEN IN WATER */}
-      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.065 && progress < 0.98 && (
+      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.075 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}
     </group>
