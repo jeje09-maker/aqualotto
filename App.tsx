@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import React, { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
@@ -14,7 +13,6 @@ const COLORS = [
   '#FF6D00', '#DD2C00', '#C51162', '#651FFF', '#00BFA5'
 ];
 
-// Official Korean 6/45 Lotto Ball Color scheme
 export const getLottoColor = (num: number) => {
   if (num <= 10) return { bg: '#f59e0b', text: '#ffffff', border: '#d97706', label: '1~10 (노랑)' };
   if (num <= 20) return { bg: '#2563eb', text: '#ffffff', border: '#1d4ed8', label: '11~20 (파랑)' };
@@ -105,7 +103,7 @@ const App: React.FC = () => {
       return {
         id: i + 1,
         name: name.trim() || `${i + 1}번 선수`,
-        lane: i - (count - 1) / 2,
+        lane: i, // 0-indexed lane number (getLaneX will calculate centered offset)
         speed: speed * 0.95,
         surge,
         frequency: 1.5 + Math.random() * 2.0,
@@ -132,7 +130,6 @@ const App: React.FC = () => {
       const targetWinners = (isLottoMode || count === 45) ? 6 : count;
 
       if (newResults.length >= targetWinners) {
-        // Mark all non-winning swimmers as collapsed (fallen down on the spot!)
         setSwimmers(curSwimmers =>
           curSwimmers.map(s => {
             const isWinner = newResults.some(w => w.id === s.id);
@@ -190,4 +187,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
