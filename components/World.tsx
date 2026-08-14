@@ -1,11 +1,10 @@
-
 // @ts-nocheck
 import React, { useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AppState, Swimmer as SwimmerType } from '../types';
 import Swimmer from './Swimmer';
-import SwimmingPool from './SwimmingPool';
+import SwimmingPool, { getLaneX } from './SwimmingPool';
 import SoundManager from './SoundManager';
 import Crowd from './Crowd';
 
@@ -16,7 +15,6 @@ interface WorldProps {
   onStateTransition: (state: AppState) => void;
 }
 
-// Cinematic camera shots during race
 const RACE_SHOTS = [
   { id: 'side_high',    dur: 4.5 },
   { id: 'in_water',     dur: 3.5 },
@@ -35,12 +33,11 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   const [currentIntroIdx, setCurrentIntroIdx] = useState(-1);
 
   const count = swimmers.length;
-  const laneWidth = count > 15 ? 2.2 : 3;
+  const laneWidth = count > 15 ? 2.2 : 3.0;
 
   const camPos = useRef(new THREE.Vector3(30, 20, 30));
   const camTarget = useRef(new THREE.Vector3(0, 0, 0));
 
-  // Cinematic cut tracking
   const shotTimer = useRef(0);
   const shotIdx = useRef(0);
 
@@ -60,7 +57,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   useFrame((state, delta) => {
     if (!camera) return;
     const t = state.clock.getElapsedTime();
-    const poolSpan = Math.max(12, count * laneWidth);
+    const poolSpan = count * laneWidth;
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
@@ -70,7 +67,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camTarget.current.lerp(new THREE.Vector3(0, 1, -15), 0.06);
     }
 
-    // ---- GREETING ----
+    // ---- GREETING (선수 소개 - 카메라 & 위치 100% 정밀 맞춤) ----
     else if (appState === AppState.GREETING) {
       stateTimer.current += delta;
       const introDuration = count > 10 ? 1.0 : 2.5;
@@ -78,9 +75,9 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       if (idx < count && (count <= 10 || idx < 6)) {
         if (idx !== currentIntroIdx) setCurrentIntroIdx(idx);
         const s = swimmers[idx];
-        const targetX = s.lane * laneWidth;
-        camTarget.current.lerp(new THREE.Vector3(targetX, 2.5, 2.2), 0.15);
-        camPos.current.lerp(new THREE.Vector3(targetX + 3, 4.0, 7), 0.08);
+        const targetX = getLaneX(s.lane, count, laneWidth);
+        camTarget.current.lerp(new THREE.Vector3(targetX, 2.4, 2.2), 0.2);
+        camPos.current.lerp(new THREE.Vector3(targetX, 3.5, 6.4), 0.12);
       } else {
         onStateTransition(AppState.PREPARING);
         stateTimer.current = 0;
@@ -101,24 +98,22 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
 
-    // ---- RACING — cinematic multi-angle cuts ----
+    // ---- RACING ----
     else if (appState === AppState.RACING) {
       if (swimmers.length === 0) return;
       const elapsed = t - raceStartRef.current;
 
-      // Compute swimmer center
       let centerX = 0, centerZ = 0, maxProgress = 0;
       swimmers.forEach(s => {
         const p = Math.min(elapsed * s.speed, 1);
         maxProgress = Math.max(maxProgress, p);
         centerZ += 2.2 - p * 54.6;
-        centerX += s.lane * laneWidth;
+        centerX += getLaneX(s.lane, count, laneWidth);
       });
       centerX /= swimmers.length;
       centerZ /= swimmers.length;
       centerZ = Math.max(-52, Math.min(3, centerZ));
 
-      // Advance shot timer
       shotTimer.current += delta;
       const curShot = RACE_SHOTS[shotIdx.current % RACE_SHOTS.length];
       if (shotTimer.current >= curShot.dur) {
@@ -136,7 +131,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
           break;
         }
         case 'in_water': {
-          const lane0X = swimmers[0] ? swimmers[0].lane * laneWidth : 0;
+          const lane0X = swimmers[0] ? getLaneX(swimmers[0].lane, count, laneWidth) : 0;
           camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, 0.8, centerZ + 8), ls);
           camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 5), ls * 1.6);
           break;
@@ -154,7 +149,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
           }, swimmers[0]);
           const leaderP = Math.min(elapsed * leader.speed, 1);
           const leaderZ = Math.max(-50, 2.2 - leaderP * 54.6);
-          const leaderX = leader.lane * laneWidth;
+          const leaderX = getLaneX(leader.lane, count, laneWidth);
           camPos.current.lerp(new THREE.Vector3(leaderX + 3, 5, leaderZ + 12), ls * 0.9);
           camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 4), ls * 1.5);
           break;
@@ -199,6 +194,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
         <Swimmer
           key={s.id}
           swimmer={s}
+          totalSwimmers={count}
           appState={appState}
           laneWidth={laneWidth}
           isCurrentIntro={idx === currentIntroIdx}
@@ -215,4 +211,3 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 };
 
 export default World;
-

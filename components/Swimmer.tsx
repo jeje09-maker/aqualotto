@@ -4,29 +4,31 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AppState, Swimmer as SwimmerType } from '../types';
 import Splash from './Splash';
+import { getLaneX } from './SwimmingPool';
 
 interface SwimmerProps {
   swimmer: SwimmerType;
+  totalSwimmers: number;
   appState: AppState;
   isCurrentIntro: boolean;
   onReachedEnd: () => void;
   laneWidth?: number;
 }
 
-const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, onReachedEnd, laneWidth = 3 }) => {
+const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isCurrentIntro, onReachedEnd, laneWidth = 3 }) => {
   const group = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
 
-  // Upper arm groups (rotate at shoulder)
+  // Upper arm groups
   const leftUpperArm = useRef<THREE.Group>(null);
   const rightUpperArm = useRef<THREE.Group>(null);
-  // Forearm groups (rotate at elbow)
+  // Forearm groups
   const leftForearm = useRef<THREE.Group>(null);
   const rightForearm = useRef<THREE.Group>(null);
-  // Upper leg groups (rotate at hip)
+  // Upper leg groups
   const leftUpperLeg = useRef<THREE.Group>(null);
   const rightUpperLeg = useRef<THREE.Group>(null);
-  // Calf groups (rotate at knee)
+  // Calf groups
   const leftCalf = useRef<THREE.Group>(null);
   const rightCalf = useRef<THREE.Group>(null);
 
@@ -40,13 +42,13 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
+  const laneX = getLaneX(swimmer.lane, totalSwimmers, laneWidth);
   const animMult = useRef(0.85 + Math.random() * 0.35);
 
-  // Realistic wet skin material settings
   const skinColor = '#e5b88a';
   const swimColor = swimmer.color || '#2563eb';
 
-  // Create Jersey Number Texture
+  // Number Badge Texture for Swim Cap
   const numberTexture = React.useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -69,14 +71,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
     return tex;
   }, [swimmer.id, swimmer.capColor, swimColor]);
 
-  // Create Floating 3D Nameplate Texture
+  // Floating 3D Nameplate Texture
   const nameplateTexture = React.useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
+      ctx.fillStyle = 'rgba(10, 15, 30, 0.88)';
       ctx.roundRect(4, 4, 248, 56, 16);
       ctx.fill();
       ctx.strokeStyle = swimmer.capColor || swimColor;
@@ -110,8 +112,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
-      group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
-      group.current.rotation.set(0, Math.PI, 0);
+      group.current.position.set(laneX, onBlockY, startZ);
+      group.current.rotation.set(0, Math.PI, 0); // facing camera/pool
       if (body.current) body.current.rotation.set(0, 0, 0);
       if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.2);
       if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.2);
@@ -126,12 +128,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
     // ---- GREETING ----
     if (appState === AppState.GREETING) {
-      group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
+      group.current.position.set(laneX, onBlockY, startZ);
       if (isCurrentIntro) {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.15);
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.15); // face camera directly
         if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -2.2 + Math.sin(t * 8) * 0.4, 0.2);
       } else {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.1);
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1); // face pool
         if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -0.2, 0.1);
       }
       return;
@@ -139,27 +141,27 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
     // ---- READY ----
     if (appState === AppState.READY) {
-      group.current.position.set(swimmer.lane * laneWidth, onBlockY, startZ);
-      group.current.rotation.y = Math.PI;
+      group.current.position.set(laneX, onBlockY, startZ);
+      group.current.rotation.y = 0; // face pool (-Z)
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
-      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.35, 0.15);
-      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, -0.6, 0.15);
-      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, -0.6, 0.15);
+      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, 0.35, 0.15);
+      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, 0.6, 0.15);
+      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, 0.6, 0.15);
       return;
     }
 
-    // ---- RACING & FINISHED (with Fall Down / Collapse logic) ----
+    // ---- RACING & FINISHED ----
     if (appState === AppState.RACING || appState === AppState.FINISHED) {
       if (swimmer.isCollapsed) {
         collapseAnimProgress.current = Math.min(1, collapseAnimProgress.current + delta * 3);
         const colT = collapseAnimProgress.current;
 
-        group.current.position.x = swimmer.lane * laneWidth;
+        group.current.position.x = laneX;
         group.current.position.z = startZ - currentProgressRef.current * poolLength;
         group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.65, 0.1);
         
-        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, Math.PI * 0.95, 0.1);
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI + 0.3, 0.1);
+        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -Math.PI * 0.45, 0.1);
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0.3, 0.1);
         group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0.6, 0.1);
 
         if (leftUpperArm.current) leftUpperArm.current.rotation.set(0.6 * colT, 0, -0.7 * colT);
@@ -174,7 +176,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
       }
 
       if (appState === AppState.FINISHED && currentProgressRef.current >= 1) {
-        group.current.position.set(swimmer.lane * laneWidth, 0.4, finishZ + 0.5);
+        group.current.position.set(laneX, 0.4, finishZ + 0.5);
         group.current.rotation.set(-0.2, Math.PI, 0);
         if (rightUpperArm.current) rightUpperArm.current.rotation.z = -2.0 + Math.sin(t * 6) * 0.3;
         return;
@@ -194,19 +196,22 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
         const diveThreshold = 0.06;
         if (nextProgress < diveThreshold) {
+          // DIVE Pose: Head diving forward into water
           const diveT = nextProgress / diveThreshold;
-          group.current.position.x = swimmer.lane * laneWidth;
+          group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           const jumpHeight = Math.sin(diveT * Math.PI) * 2.4;
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.5);
+          
+          // Rotate body forward into pool (-Z direction)
           group.current.rotation.set(
-            THREE.MathUtils.lerp(0, Math.PI * 0.65, diveT),
-            Math.PI,
+            THREE.MathUtils.lerp(0, -Math.PI * 0.55, diveT),
+            0,
             0
           );
           if (body.current) body.current.rotation.set(0, 0, 0);
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, -0.06);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, 0.06);
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(Math.PI * 0.85 * diveT, 0, -0.06);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(Math.PI * 0.85 * diveT, 0, 0.06);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -214,15 +219,19 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          group.current.position.x = swimmer.lane * laneWidth;
+          // SWIM Pose: HEAD FORWARD TOWARDS FINISH (-Z), FEET BEHIND (+Z)
+          group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
-          group.current.rotation.set(Math.PI / 2, Math.PI, 0);
+          
+          // CRITICAL: rotation X = -Math.PI/2 makes local +Y (HEAD) point FORWARD to -Z!
+          group.current.rotation.set(-Math.PI / 2, 0, 0);
           if (body.current) body.current.rotation.x = 0;
 
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
+          // Freestyle arm strokes
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
@@ -234,14 +243,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
             } else {
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
             }
-            armUpperRef.current.rotation.x = -armX * 0.65;
+            armUpperRef.current.rotation.x = armX * 0.65;
             armUpperRef.current.rotation.z = zSign * (0.15 + Math.sin(ph) * 0.08);
 
             let elbowBend: number;
             if (norm < 0.5) {
-              elbowBend = Math.sin(norm * Math.PI * 2) * (Math.PI / 2.1);
+              elbowBend = -Math.sin(norm * Math.PI * 2) * (Math.PI / 2.1);
             } else {
-              elbowBend = Math.sin((norm - 0.5) * Math.PI) * 0.5;
+              elbowBend = -Math.sin((norm - 0.5) * Math.PI) * 0.5;
             }
             armForearmRef.current.rotation.x = elbowBend;
           };
@@ -249,14 +258,15 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           computeArm(0, leftUpperArm, leftForearm, -1);
           computeArm(Math.PI, rightUpperArm, rightForearm, 1);
 
+          // Flutter kick
           const kickSpeed = Math.max(5.0, swimSpeed * 1.65);
           const kickAmp = 0.44;
 
           const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
             if (!legUpperRef.current || !legCalfRef.current) return;
-            const legSin = -Math.sin(t * kickSpeed + phaseOffset);
+            const legSin = Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = legSin * kickAmp;
-            const kneeBend = Math.max(0, legSin) * 0.62;
+            const kneeBend = -Math.max(0, legSin) * 0.62;
             legCalfRef.current.rotation.x = kneeBend;
           };
 
@@ -276,7 +286,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
   });
 
   return (
-    <group ref={group} position={[swimmer.lane * laneWidth, onBlockY, startZ]}>
+    <group ref={group} position={[laneX, onBlockY, startZ]}>
       <group ref={body}>
 
         {/* 3D Floating Nameplate Badge */}
@@ -300,14 +310,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
             <boxGeometry args={[0.18, 0.16, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
-          {/* Lower Torso / Tapered Waist & Abs */}
+          {/* Lower Torso / Tapered Waist */}
           <mesh castShadow position={[0, -0.06, 0]}>
             <cylinderGeometry args={[0.26, 0.22, 0.32, 16]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
         </group>
 
-        {/* Professional Swim Trunks */}
+        {/* Swim Trunks */}
         <group position={[0, -0.18, 0]}>
           <mesh castShadow>
             <cylinderGeometry args={[0.23, 0.21, 0.35, 16]} />
@@ -318,7 +328,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
             <torusGeometry args={[0.235, 0.02, 8, 20]} />
             <meshStandardMaterial color={swimmer.capColor || '#ffffff'} roughness={0.3} />
           </mesh>
-          {/* Lotto Number Badge on Swim Trunks */}
+          {/* Lotto Number Badge */}
           <mesh position={[0, 0.02, 0.22]} rotation={[0, 0, 0]}>
             <planeGeometry args={[0.16, 0.16]} />
             <meshStandardMaterial map={numberTexture} transparent roughness={0.5} />
@@ -327,13 +337,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
         {/* Anatomical Head with Swim Cap & Tinted Goggles */}
         <group position={[0, 0.72, 0]}>
-          {/* Head Base */}
           <mesh castShadow>
             <sphereGeometry args={[0.19, 24, 24]} />
             <meshStandardMaterial color={skinColor} roughness={0.4} />
           </mesh>
           
-          {/* Streamlined Silicone Swim Cap */}
+          {/* Silicone Swim Cap */}
           <mesh position={[0, 0.04, -0.01]} rotation={[-0.1, 0, 0]}>
             <sphereGeometry args={[0.198, 24, 24, 0, Math.PI * 2, 0, Math.PI / 1.7]} />
             <meshStandardMaterial color={swimmer.capColor || swimColor} roughness={0.25} metalness={0.25} />
@@ -345,19 +354,16 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
             <meshStandardMaterial map={numberTexture} transparent roughness={0.4} />
           </mesh>
 
-          {/* Tinted Professional Racing Goggles */}
+          {/* Racing Goggles */}
           <group position={[0, -0.02, 0.16]}>
-            {/* Left Lens */}
             <mesh position={[-0.065, 0, 0]} rotation={[0, 0.2, 0]}>
               <boxGeometry args={[0.08, 0.05, 0.04]} />
               <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Right Lens */}
             <mesh position={[0.065, 0, 0]} rotation={[0, -0.2, 0]}>
               <boxGeometry args={[0.08, 0.05, 0.04]} />
               <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Goggle Strap */}
             <mesh position={[0, 0, -0.1]} rotation={[0, 0, 0]}>
               <torusGeometry args={[0.185, 0.012, 6, 24]} />
               <meshStandardMaterial color="#1e293b" roughness={0.5} />
@@ -365,25 +371,21 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           </group>
         </group>
 
-        {/* LEFT ARM (Deltoid + Biceps + Forearm + Hand) */}
+        {/* LEFT ARM */}
         <group ref={leftUpperArm} position={[-0.32, 0.42, 0]}>
-          {/* Shoulder Deltoid */}
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.085, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
-          {/* Upper Arm Biceps */}
           <mesh position={[0, -0.21, 0]} castShadow>
             <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={leftForearm} position={[0, -0.44, 0]}>
-            {/* Forearm */}
             <mesh position={[0, -0.17, 0]} castShadow>
               <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Hand Paddle */}
             <mesh position={[0, -0.34, 0.03]} castShadow>
               <boxGeometry args={[0.11, 0.06, 0.16]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -391,25 +393,21 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           </group>
         </group>
 
-        {/* RIGHT ARM (Deltoid + Biceps + Forearm + Hand) */}
+        {/* RIGHT ARM */}
         <group ref={rightUpperArm} position={[0.32, 0.42, 0]}>
-          {/* Shoulder Deltoid */}
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.085, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
-          {/* Upper Arm Biceps */}
           <mesh position={[0, -0.21, 0]} castShadow>
             <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={rightForearm} position={[0, -0.44, 0]}>
-            {/* Forearm */}
             <mesh position={[0, -0.17, 0]} castShadow>
               <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Hand Paddle */}
             <mesh position={[0, -0.34, 0.03]} castShadow>
               <boxGeometry args={[0.11, 0.06, 0.16]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -417,7 +415,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           </group>
         </group>
 
-        {/* LEFT LEG (Quad + Calf + Foot) */}
+        {/* LEFT LEG */}
         <group ref={leftUpperLeg} position={[-0.13, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
             <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
@@ -428,7 +426,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Foot */}
             <mesh position={[0, -0.42, 0.08]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -436,7 +433,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
           </group>
         </group>
 
-        {/* RIGHT LEG (Quad + Calf + Foot) */}
+        {/* RIGHT LEG */}
         <group ref={rightUpperLeg} position={[0.13, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
             <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
@@ -447,7 +444,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Foot */}
             <mesh position={[0, -0.42, 0.08]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -457,7 +453,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, appState, isCurrentIntro, on
 
       </group>
 
-      {/* Dynamic Water Splash Particle Effect while swimming */}
+      {/* Dynamic Water Splash */}
       {appState === AppState.RACING && !swimmer.isCollapsed && progress > 0.03 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}
