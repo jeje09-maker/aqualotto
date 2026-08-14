@@ -190,26 +190,34 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        const diveThreshold = 0.06;
+        const diveThreshold = 0.08;
         if (nextProgress < diveThreshold) {
-          // PROVEN HEAD-FIRST DIVE (Head leads forward towards -Z, feet push off behind at +Z!)
+          // REALISTIC PARABOLIC HEAD-FIRST DIVE (머리부터 물에 입수!)
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
-          const jumpHeight = Math.sin(diveT * Math.PI) * 2.2;
-          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.5);
           
-          // Pitch forward into water: rotation goes 0 -> -Math.PI * 0.5
-          // Head (0,1,0) aims down and forward towards -Z into water!
-          // Feet (0,-1,0) stay behind at +Z!
-          group.current.rotation.set(
-            THREE.MathUtils.lerp(0, -Math.PI * 0.5, diveT),
-            Math.PI,
-            0
-          );
+          // Parabolic jump arc
+          const jumpHeight = Math.sin(diveT * Math.PI) * 1.8;
+          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.35);
+          
+          // Pitch angle curve:
+          // 0.0 ~ 0.2: Quick pitch forward (-0.70pi)
+          // 0.2 ~ 0.7: Locked head-first downward plunge (-0.75pi) -> Head points DOWN into water (Y=-0.71), Feet in AIR behind!
+          // 0.7 ~ 1.0: Level-off underwater glide (-0.50pi) -> Smoothly levels into swim pose
+          let divePitch: number;
+          if (diveT < 0.2) {
+            divePitch = THREE.MathUtils.lerp(0, -Math.PI * 0.70, diveT / 0.2);
+          } else if (diveT < 0.7) {
+            divePitch = -Math.PI * 0.75;
+          } else {
+            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.75, -Math.PI * 0.50, (diveT - 0.7) / 0.3);
+          }
+
+          group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
-          // Streamline arm pose during dive
+          // Streamline dive pose: Both arms extended straight over head together!
           if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.95, 0, -0.05);
           if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.95, 0, 0.05);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
@@ -219,7 +227,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // PROVEN SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
+          // SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
           // Head (0,1,0) -> (0, 0, -1) [Head points FORWARD to finish line -Z!]
           // Feet (0,-1,0) -> (0, 0, 1) [Feet point BEHIND to start line +Z!]
           // Chest & Toes (0,0,1) -> (0, -1, 0) [Chest & Toes point DOWN into water -Y!]
