@@ -178,9 +178,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // ================= 1. DIVE & 2-SECOND UNDERWATER DOLPHIN GLIDE =================
-        // diveThreshold = 0.14: Approx 2.0 seconds of underwater dive & streamline dolphin glide before breakout!
-        const diveThreshold = 0.14;
+        // ================= 1. DIVE & EXACT 3.0-SECOND FULLY INVISIBLE UNDERWATER GLIDE =================
+        // diveThreshold = 0.20: EXACT 3.0 seconds of deep submerged glide where swimmer is completely invisible under water!
+        const diveThreshold = 0.20;
         group.current.position.x = laneX;
         group.current.position.z = startZ - nextProgress * poolLength;
 
@@ -190,20 +190,20 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           let jumpHeight: number;
           let divePitch: number;
 
-          if (diveT < 0.25) {
+          if (diveT < 0.20) {
             // Stage 1: Launch off block into air
-            const tNorm = diveT / 0.25;
+            const tNorm = diveT / 0.20;
             jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.6;
             divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.38, tNorm);
-          } else if (diveT < 0.55) {
-            // Stage 2: Plunge head-first into water (Y = -0.75m submerged)
-            const tNorm = (diveT - 0.25) / 0.30;
-            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.6 - tNorm * 1.8;
+          } else if (diveT < 0.70) {
+            // Stage 2: Plunge deep head-first into water (Y = -1.6m deep: 100% COMPLETELY INVISIBLE UNDERWATER FOR 3 SECONDS!)
+            const tNorm = (diveT - 0.20) / 0.50;
+            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.6 - tNorm * 2.8;
             divePitch = THREE.MathUtils.lerp(-Math.PI * 0.38, -Math.PI * 0.68, tNorm);
           } else {
-            // Stage 3: Hold 2-second underwater dolphin glide (Y = -0.75m), then ascend smoothly to breakout Y = -0.15m!
-            const tNorm = (diveT - 0.55) / 0.45;
-            jumpHeight = -1.2 + tNorm * 0.6; // Submerged glide -> ascending to breakout
+            // Stage 3: Smooth ascent at 3.0s mark up to surface breakout (Y = 0.05m)
+            const tNorm = (diveT - 0.70) / 0.30;
+            jumpHeight = -2.2 + tNorm * 1.55;
             divePitch = THREE.MathUtils.lerp(-Math.PI * 0.68, -Math.PI * 0.50, tNorm);
           }
 
@@ -221,9 +221,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // ================= 2. BREAKOUT SURFACE SWIM & PADDLE STROKE =================
-          // Y = -0.15m: Head & swim cap 50% clearly visible above water surface (Y = 0.05m)!
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.2);
+          // ================= 2. BREAKOUT SURFACE SWIM & 1/2 FACE CLEARLY VISIBLE =================
+          // Y = 0.05m: Face & goggles & swim cap are EXACTLY 1/2 (50%) PROMINENTLY VISIBLE ABOVE THE WATER SURFACE!
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, 0.05, 0.2);
           
           // LASER-STRAIGHT FORWARD ORIENTATION (Y=PI, Z=0 FIXED, ZERO WOBBLE!)
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
@@ -440,7 +440,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       </group>
 
       {/* Dynamic Water Splash ONLY WHEN IN WATER */}
-      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.10 && progress < 0.98 && (
+      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.15 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}
     </group>
