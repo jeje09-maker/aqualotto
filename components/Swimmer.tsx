@@ -125,9 +125,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
     // ---- READY ----
     if (appState === AppState.READY || appState === AppState.GREETING || appState === AppState.PREPARING) {
       group.current.position.set(laneX, onBlockY, startZ);
-      group.current.rotation.y = Math.PI;
+      group.current.rotation.set(0, Math.PI, 0);
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
-      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.35, 0.15);
+      if (body.current) body.current.rotation.set(-0.35, 0, 0);
       if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, -0.6, 0.15);
       if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, -0.6, 0.15);
       return;
@@ -168,47 +168,49 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       if (appState === AppState.RACING && currentProgressRef.current < 1) {
         const elapsed = t - startTime.current;
         const p_base = elapsed * swimmer.speed;
-        const p_var = Math.sin(elapsed * swimmer.frequency + swimmer.phase) * swimmer.surge;
         let p_spurt = 0;
         if (p_base > swimmer.spurtThreshold) {
           p_spurt = Math.pow((p_base - swimmer.spurtThreshold) * 10, 2.2) * swimmer.spurtStrength;
         }
-        const nextProgress = Math.max(currentProgressRef.current + delta * 0.02, Math.min(p_base + p_var + p_spurt, 1));
+
+        // Linear forward progress (ZERO surge wobbling!)
+        const nextProgress = Math.max(currentProgressRef.current + delta * 0.02, Math.min(p_base + p_spurt, 1));
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // REALISTIC HEAD-FIRST DIVE ENTRY
-        const diveThreshold = 0.075;
+        // CONTINUOUS SMOOTH FLUID DIVE & SUBMERGED SWIM POSITIONS
+        const diveThreshold = 0.08;
+        group.current.position.x = laneX;
+        group.current.position.z = startZ - nextProgress * poolLength;
+
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
-          group.current.position.x = laneX;
-          
-          const diveDistance = diveT * 5.2;
-          group.current.position.z = startZ - diveDistance;
           
           let jumpHeight: number;
           let divePitch: number;
 
           if (diveT < 0.3) {
             const tNorm = diveT / 0.3;
-            jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.7;
-            divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.40, tNorm);
-          } else if (diveT < 0.75) {
-            const tNorm = (diveT - 0.3) / 0.45;
-            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.7 - tNorm * 1.8;
-            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.40, -Math.PI * 0.72, tNorm);
+            jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.6;
+            divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.38, tNorm);
+          } else if (diveT < 0.7) {
+            const tNorm = (diveT - 0.3) / 0.4;
+            jumpHeight = Math.cos(tNorm * Math.PI * 0.5) * 0.6 - tNorm * 1.7;
+            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.38, -Math.PI * 0.68, tNorm);
           } else {
-            const tNorm = (diveT - 0.75) / 0.25;
-            jumpHeight = -1.1 + tNorm * 1.02;
-            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.72, -Math.PI * 0.50, tNorm);
+            const tNorm = (diveT - 0.7) / 0.3;
+            // Smoothly level off into submerged swim depth (Y = -0.35)
+            jumpHeight = -1.1 - tNorm * 1.67;
+            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.68, -Math.PI * 0.50, tNorm);
           }
 
           group.current.position.y = onBlockY + jumpHeight;
+          // Fixed Y & Z rotation (ZERO left-right wobble!)
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.98, 0, -0.05);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0.05);
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.98, 0, 0);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -216,20 +218,18 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // PERFECT WATER DRAFTING DEPTH (Y = -0.08: Body submerged naturally underwater, zero left-right wobbling!)
-          group.current.position.x = laneX;
-          group.current.position.z = startZ - nextProgress * poolLength;
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.08, 0.3);
+          // SUBMERGED SWIM DEPTH (Y = -0.35: Swimmer submerged nicely underwater!)
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.35, 0.2);
           
-          // Laser-straight forward orientation (zero Y/Z wobbling!)
+          // LASER-STRAIGHT FORWARD ORIENTATION (Rotations Y=PI, Z=0 FIXED!)
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
 
-          const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
+          const swimSpeed = Math.max(3.0, Math.min(12, (5.0 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
-          // Freestyle arm strokes
-          const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
+          // Freestyle arm strokes (ZERO Z-wobble!)
+          const computeArm = (phaseOffset: number, armUpperRef, armForearmRef) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
             const norm = ph / (Math.PI * 2);
@@ -241,7 +241,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
             }
             armUpperRef.current.rotation.x = -armX * 0.95;
-            armUpperRef.current.rotation.z = zSign * (0.22 + Math.sin(ph) * 0.12);
+            armUpperRef.current.rotation.z = 0; // ZERO Z-wobble!
 
             let elbowBend: number;
             if (norm < 0.5) {
@@ -252,8 +252,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             armForearmRef.current.rotation.x = elbowBend;
           };
 
-          computeArm(0, leftUpperArm, leftForearm, -1);
-          computeArm(Math.PI, rightUpperArm, rightForearm, 1);
+          computeArm(0, leftUpperArm, leftForearm);
+          computeArm(Math.PI, rightUpperArm, rightForearm);
 
           // Submerged flutter kick
           const kickSpeed = Math.max(5.0, swimSpeed * 1.65);
@@ -262,6 +262,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             if (!legUpperRef.current || !legCalfRef.current) return;
             const legSin = Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = Math.max(0, legSin) * 0.32 + 0.05;
+            legUpperRef.current.rotation.z = 0; // ZERO Z-wobble!
             const kneeBend = Math.max(0, legSin) * 0.45;
             legCalfRef.current.rotation.x = kneeBend;
           };
