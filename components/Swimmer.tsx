@@ -177,14 +177,13 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // FAST REALISTIC LOW-PROFILE RACING DIVE (0.035 threshold = fast snappy 0.2s plunge into water!)
         const diveThreshold = 0.035;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           
-          const jumpHeight = Math.sin(diveT * Math.PI) * 0.6; // Low-profile realistic diving arc
+          const jumpHeight = Math.sin(diveT * Math.PI) * 0.6;
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.3);
           
           const divePitch = THREE.MathUtils.lerp(-0.2, -Math.PI * 0.65, diveT);
@@ -201,9 +200,13 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
           // SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
+          // Head (0,1,0) -> (0, 0, -1) [Head points FORWARD to finish line -Z!]
+          // Feet (0,-1,0) -> (0, 0, 1) [Feet point BEHIND to start line +Z!]
+          // Chest (0,0,1) -> (0, -1, 0) [Chest & Toes point DOWN into water -Y!]
+          // Back (0,0,-1) -> (0, 1, 0) [Back & Cap point UP to camera +Y!]
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.22, 0.3);
           
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
@@ -211,6 +214,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
+          // Freestyle arm strokes
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
@@ -237,14 +241,15 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           computeArm(0, leftUpperArm, leftForearm, -1);
           computeArm(Math.PI, rightUpperArm, rightForearm, 1);
 
+          // Submerged flutter kick (legs only kick DOWNWARD into water, NEVER upward into air!)
           const kickSpeed = Math.max(5.0, swimSpeed * 1.65);
-          const kickAmp = 0.44;
 
           const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
             if (!legUpperRef.current || !legCalfRef.current) return;
-            const legSin = -Math.sin(t * kickSpeed + phaseOffset);
-            legUpperRef.current.rotation.x = legSin * kickAmp;
-            const kneeBend = Math.max(0, legSin) * 0.62;
+            const legSin = Math.sin(t * kickSpeed + phaseOffset);
+            // Clamp leg rotation to positive angles [0, 0.32] -> Kicks DOWN into water ONLY!
+            legUpperRef.current.rotation.x = Math.max(0, legSin) * 0.32 + 0.05;
+            const kneeBend = Math.max(0, legSin) * 0.45;
             legCalfRef.current.rotation.x = kneeBend;
           };
 
@@ -252,7 +257,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           computeLeg(Math.PI, rightUpperLeg, rightCalf);
 
           if (body.current) {
-            body.current.rotation.z = Math.sin(cycle * 0.5) * 0.22;
+            body.current.rotation.z = Math.sin(cycle * 0.5) * 0.18;
           }
         }
 
@@ -272,7 +277,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           <spriteMaterial map={nameplateTexture} depthTest={false} />
         </sprite>
 
-        {/* Athletic Human Torso - Smooth Rounded Shoulder Capsule (자연스럽게 둥글게 이어지는 진짜 사람의 어깨 체형!) */}
+        {/* Athletic Human Torso - Smooth Rounded Shoulder Capsule */}
         <group position={[0, 0.2, 0]}>
           <mesh castShadow position={[0, 0.24, 0]} scale={[1.38, 1.0, 0.88]}>
             <capsuleGeometry args={[0.24, 0.26, 12, 24]} />
@@ -419,7 +424,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
       </group>
 
-      {/* Dynamic Water Splash ONLY WHEN IN WATER (ZERO BUBBLES IN THE AIR!) */}
+      {/* Dynamic Water Splash ONLY WHEN IN WATER */}
       {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.035 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}

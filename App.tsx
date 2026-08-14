@@ -146,14 +146,14 @@ const App: React.FC = () => {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-screen bg-sky-950 select-none">
+    <div className="relative w-full h-screen bg-slate-950 select-none">
       <Canvas shadows gl={{ antialias: true, toneMapping: THREE.NoToneMapping }}>
-        {/* Vibrant Bright Pure Ocean Sky Background */}
-        <color attach="background" args={["#0284c7"]} />
+        {/* Deep Saturated Indoor Stadium Background (#0b1329) */}
+        <color attach="background" args={["#0b1329"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[20, 45, 20]} intensity={2.8} castShadow />
-        <directionalLight position={[-20, 30, -20]} intensity={1.4} />
+        <ambientLight intensity={1.1} />
+        <directionalLight position={[20, 45, 20]} intensity={2.6} castShadow />
+        <directionalLight position={[-20, 30, -20]} intensity={1.2} />
         
         <World 
           appState={appState} 
