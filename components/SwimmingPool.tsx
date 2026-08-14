@@ -17,9 +17,9 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
   const poolCenterZ = -25;
   const poolDepth = 3.2;
 
-  const stadiumWidth = Math.max(60, poolWidth + 20);
-  const stadiumLength = poolLength + 20;
-  const roofHeight = 18;
+  const stadiumWidth = Math.max(70, poolWidth + 30);
+  const stadiumLength = poolLength + 30;
+  const roofHeight = 22;
 
   return (
     <group>
@@ -27,13 +27,13 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.05, poolCenterZ]} receiveShadow>
         <planeGeometry args={[poolWidth, poolLength + 4]} />
         <meshStandardMaterial 
-          color="#00a8e8" 
+          color="#00b4d8" 
           transparent 
-          opacity={0.6} 
+          opacity={0.65} 
           metalness={0.8} 
           roughness={0.05}
-          emissive="#005b96"
-          emissiveIntensity={0.35}
+          emissive="#0077b6"
+          emissiveIntensity={0.4}
         />
       </mesh>
 
@@ -41,7 +41,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       {/* Pool Bottom Tiles */}
       <mesh rotation-x={-Math.PI / 2} position={[0, -poolDepth, poolCenterZ]} receiveShadow>
         <planeGeometry args={[poolWidth, poolLength + 4]} />
-        <meshStandardMaterial color="#cbeeff" roughness={0.2} metalness={0.1} />
+        <meshStandardMaterial color="#caf0f8" roughness={0.2} metalness={0.1} />
       </mesh>
 
       {/* Black T-Markers on Pool Floor for each lane */}
@@ -68,14 +68,14 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         );
       })}
 
-      {/* Pool Basin Walls (Side & End Walls) */}
+      {/* Pool Basin Walls */}
       <mesh position={[poolWidth / 2, -poolDepth / 2, poolCenterZ]}>
         <boxGeometry args={[0.4, poolDepth, poolLength + 4]} />
-        <meshStandardMaterial color="#b3e5fc" roughness={0.3} />
+        <meshStandardMaterial color="#90e0ef" roughness={0.3} />
       </mesh>
       <mesh position={[-poolWidth / 2, -poolDepth / 2, poolCenterZ]}>
         <boxGeometry args={[0.4, poolDepth, poolLength + 4]} />
-        <meshStandardMaterial color="#b3e5fc" roughness={0.3} />
+        <meshStandardMaterial color="#90e0ef" roughness={0.3} />
       </mesh>
 
       {/* Start Pool Wall */}
@@ -84,7 +84,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         <meshStandardMaterial color="#e0f7fa" roughness={0.3} />
       </mesh>
 
-      {/* Finish Wall with Electronic Touchpads */}
+      {/* Finish Wall with Yellow Touchpads (No black wall behind it!) */}
       <group position={[0, -poolDepth / 2, -53.5]}>
         <mesh>
           <boxGeometry args={[poolWidth + 0.4, poolDepth, 0.6]} />
@@ -101,7 +101,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         })}
       </group>
 
-      {/* ================= 3. FINA LANE ROPES (FLOAT STRINGS) ================= */}
+      {/* ================= 3. FINA LANE ROPES ================= */}
       {Array.from({ length: count + 1 }).map((_, i) => {
         const ropeX = getLaneX(i - 0.5, count, laneWidth);
         const color = (i === 0 || i === count) ? '#dc2626' : (i % 2 === 0 ? '#2563eb' : '#f59e0b');
@@ -115,22 +115,19 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         );
       })}
 
-      {/* ================= 4. STARTING BLOCKS (PRO GRADE) ================= */}
+      {/* ================= 4. STARTING BLOCKS ================= */}
       {Array.from({ length: count }).map((_, i) => {
         const blockX = getLaneX(i, count, laneWidth);
         return (
           <group key={`block-${i}`} position={[blockX, 0.7, 2.3]}>
-            {/* Base Pedestal */}
             <mesh castShadow>
               <boxGeometry args={[Math.min(1.8, laneWidth * 0.7), 1.4, 1.4]} />
               <meshStandardMaterial color="#1e293b" roughness={0.5} />
             </mesh>
-            {/* Inclined Top Platform */}
             <mesh position={[0, 0.75, -0.1]} rotation={[-0.15, 0, 0]}>
               <boxGeometry args={[Math.min(1.9, laneWidth * 0.75), 0.12, 1.8]} />
               <meshStandardMaterial color="#f8fafc" roughness={0.2} />
             </mesh>
-            {/* Lane Number Plate */}
             <mesh position={[0, 0.35, 0.72]}>
               <boxGeometry args={[Math.min(1.0, laneWidth * 0.5), 0.55, 0.05]} />
               <meshStandardMaterial color="#0f172a" />
@@ -139,76 +136,42 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         );
       })}
 
-      {/* ================= 5. INDOOR AQUATIC ARENA STRUCTURE ================= */}
-      {/* Tiled Pool Deck (Floor around pool) */}
+      {/* ================= 5. INDOOR AQUATIC ARENA (OPEN & BRIGHT) ================= */}
+      {/* Tiled Pool Deck */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, poolCenterZ]} receiveShadow>
         <planeGeometry args={[stadiumWidth, stadiumLength]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color="#cbd5e1" roughness={0.4} metalness={0.1} />
       </mesh>
 
-      {/* Arena Side Walls */}
-      <mesh position={[stadiumWidth / 2, roofHeight / 2, poolCenterZ]}>
-        <boxGeometry args={[1, roofHeight, stadiumLength]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.8} />
-      </mesh>
-      <mesh position={[-stadiumWidth / 2, roofHeight / 2, poolCenterZ]}>
-        <boxGeometry args={[1, roofHeight, stadiumLength]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.8} />
-      </mesh>
-
-      {/* Back Wall behind Starting Blocks */}
-      <mesh position={[0, roofHeight / 2, stadiumLength / 2 - 10]}>
-        <boxGeometry args={[stadiumWidth, roofHeight, 1]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-
-      {/* Front Wall behind Finish Line */}
-      <mesh position={[0, roofHeight / 2, -stadiumLength / 2 - 10]}>
-        <boxGeometry args={[stadiumWidth, roofHeight, 1]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.8} />
-      </mesh>
-
-      {/* High Arched Roof Ceiling */}
-      <mesh position={[0, roofHeight, poolCenterZ]}>
-        <boxGeometry args={[stadiumWidth, 1, stadiumLength]} />
-        <meshStandardMaterial color="#020617" roughness={0.9} />
-      </mesh>
-
-      {/* Steel Roof Trusses & Ceiling Beams */}
-      {Array.from({ length: 9 }).map((_, i) => {
-        const trussZ = -55 + i * 14;
+      {/* High Ceiling Trusses with Bright Indoor Floodlights */}
+      {Array.from({ length: 7 }).map((_, i) => {
+        const trussZ = -50 + i * 16;
         return (
           <group key={`truss-${i}`} position={[0, roofHeight - 1, trussZ]}>
             <mesh>
-              <boxGeometry args={[stadiumWidth - 2, 0.6, 0.6]} />
-              <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+              <boxGeometry args={[stadiumWidth - 4, 0.6, 0.6]} />
+              <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.3} />
             </mesh>
             {/* Hanging LED Floodlights */}
             <mesh position={[-stadiumWidth * 0.25, -0.6, 0]}>
               <cylinderGeometry args={[1.2, 1.8, 0.8, 16]} />
-              <meshStandardMaterial color="#f8fafc" emissive="#ffffff" emissiveIntensity={1.2} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} />
             </mesh>
             <mesh position={[0, -0.6, 0]}>
               <cylinderGeometry args={[1.2, 1.8, 0.8, 16]} />
-              <meshStandardMaterial color="#f8fafc" emissive="#ffffff" emissiveIntensity={1.2} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} />
             </mesh>
             <mesh position={[stadiumWidth * 0.25, -0.6, 0]}>
               <cylinderGeometry args={[1.2, 1.8, 0.8, 16]} />
-              <meshStandardMaterial color="#f8fafc" emissive="#ffffff" emissiveIntensity={1.2} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} />
             </mesh>
           </group>
         );
       })}
 
-      {/* Arena Banner */}
-      <mesh position={[0, roofHeight - 3.5, 3.4]} rotation={[0, 0, 0]}>
-        <planeGeometry args={[Math.min(36, poolWidth * 0.9), 3.2]} />
-        <meshStandardMaterial color="#0284c7" emissive="#0369a1" emissiveIntensity={0.6} />
-      </mesh>
-
-      {/* Underwater Pool Glow */}
-      <pointLight position={[0, -1.2, -10]} color="#38bdf8" intensity={2.5} distance={30} />
-      <pointLight position={[0, -1.2, -35]} color="#38bdf8" intensity={2.5} distance={30} />
+      {/* Underwater Crystal Clear Pool Light */}
+      <pointLight position={[0, -1.2, -10]} color="#48cae4" intensity={3.0} distance={35} />
+      <pointLight position={[0, -1.2, -35]} color="#48cae4" intensity={3.0} distance={35} />
     </group>
   );
 };

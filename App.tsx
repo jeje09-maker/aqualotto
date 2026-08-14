@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Sky, Stars, Environment, PerspectiveCamera, OrbitControls } from '@react-three/drei';
+import { Environment, PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import { AppState, Swimmer } from './types';
 import World from './components/World';
 import UIOverlay from './components/UIOverlay';
@@ -103,7 +103,7 @@ const App: React.FC = () => {
       return {
         id: i + 1,
         name: name.trim() || `${i + 1}번 선수`,
-        lane: i, // 0-indexed lane number (getLaneX will calculate centered offset)
+        lane: i,
         speed: speed * 0.95,
         surge,
         frequency: 1.5 + Math.random() * 2.0,
@@ -147,10 +147,10 @@ const App: React.FC = () => {
   return (
     <div className="relative w-full h-screen bg-slate-950 select-none">
       <Canvas shadows gl={{ antialias: true }}>
+        <color attach="background" args={["#0c1a2e"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <Sky sunPosition={[100, 30, 100]} turbidity={0.05} rayleigh={0.5} />
-        <Stars radius={150} depth={50} count={3000} factor={5} />
-        <ambientLight intensity={0.65} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[20, 40, 20]} intensity={1.4} castShadow />
         
         <World 
           appState={appState} 
@@ -164,7 +164,7 @@ const App: React.FC = () => {
           maxPolarAngle={Math.PI / 2.05} 
           enabled={appState === AppState.IDLE || appState === AppState.FINISHED}
         />
-        <Environment preset="night" />
+        <Environment preset="city" />
       </Canvas>
 
       <UIOverlay 

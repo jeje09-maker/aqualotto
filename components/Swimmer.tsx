@@ -19,16 +19,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const group = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
 
-  // Upper arm groups
   const leftUpperArm = useRef<THREE.Group>(null);
   const rightUpperArm = useRef<THREE.Group>(null);
-  // Forearm groups
   const leftForearm = useRef<THREE.Group>(null);
   const rightForearm = useRef<THREE.Group>(null);
-  // Upper leg groups
   const leftUpperLeg = useRef<THREE.Group>(null);
   const rightUpperLeg = useRef<THREE.Group>(null);
-  // Calf groups
   const leftCalf = useRef<THREE.Group>(null);
   const rightCalf = useRef<THREE.Group>(null);
 
@@ -48,7 +44,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const skinColor = '#e5b88a';
   const swimColor = swimmer.color || '#2563eb';
 
-  // Number Badge Texture for Swim Cap
+  // Number Badge Texture
   const numberTexture = React.useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -113,7 +109,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
       group.current.position.set(laneX, onBlockY, startZ);
-      group.current.rotation.set(0, Math.PI, 0); // facing camera/pool
+      group.current.rotation.set(0, Math.PI, 0);
       if (body.current) body.current.rotation.set(0, 0, 0);
       if (leftUpperArm.current) leftUpperArm.current.rotation.set(0, 0, 0.2);
       if (rightUpperArm.current) rightUpperArm.current.rotation.set(0, 0, -0.2);
@@ -130,10 +126,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
     if (appState === AppState.GREETING) {
       group.current.position.set(laneX, onBlockY, startZ);
       if (isCurrentIntro) {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.15); // face camera directly
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.15);
         if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -2.2 + Math.sin(t * 8) * 0.4, 0.2);
       } else {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1); // face pool
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.1);
         if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -0.2, 0.1);
       }
       return;
@@ -142,11 +138,11 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
     // ---- READY ----
     if (appState === AppState.READY) {
       group.current.position.set(laneX, onBlockY, startZ);
-      group.current.rotation.y = 0; // face pool (-Z)
+      group.current.rotation.y = Math.PI;
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
-      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, 0.35, 0.15);
-      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, 0.6, 0.15);
-      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, 0.6, 0.15);
+      if (body.current) body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, -0.35, 0.15);
+      if (leftUpperArm.current) leftUpperArm.current.rotation.x = THREE.MathUtils.lerp(leftUpperArm.current.rotation.x, -0.6, 0.15);
+      if (rightUpperArm.current) rightUpperArm.current.rotation.x = THREE.MathUtils.lerp(rightUpperArm.current.rotation.x, -0.6, 0.15);
       return;
     }
 
@@ -160,8 +156,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         group.current.position.z = startZ - currentProgressRef.current * poolLength;
         group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.65, 0.1);
         
-        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -Math.PI * 0.45, 0.1);
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0.3, 0.1);
+        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, Math.PI * 0.95, 0.1);
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI + 0.3, 0.1);
         group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0.6, 0.1);
 
         if (leftUpperArm.current) leftUpperArm.current.rotation.set(0.6 * colT, 0, -0.7 * colT);
@@ -196,22 +192,20 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
         const diveThreshold = 0.06;
         if (nextProgress < diveThreshold) {
-          // DIVE Pose: Head diving forward into water
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           const jumpHeight = Math.sin(diveT * Math.PI) * 2.4;
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.5);
           
-          // Rotate body forward into pool (-Z direction)
           group.current.rotation.set(
-            THREE.MathUtils.lerp(0, -Math.PI * 0.55, diveT),
-            0,
+            THREE.MathUtils.lerp(0, Math.PI * 0.65, diveT),
+            Math.PI,
             0
           );
           if (body.current) body.current.rotation.set(0, 0, 0);
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(Math.PI * 0.85 * diveT, 0, -0.06);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(Math.PI * 0.85 * diveT, 0, 0.06);
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, -0.06);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, 0.06);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -219,13 +213,13 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM Pose: HEAD FORWARD TOWARDS FINISH (-Z), FEET BEHIND (+Z)
+          // SWIM Pose: Swimmers flipped 180° so head leads forward towards -Z, belly faces down into water, cap & back face UP to camera!
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
           
-          // CRITICAL: rotation X = -Math.PI/2 makes local +Y (HEAD) point FORWARD to -Z!
-          group.current.rotation.set(-Math.PI / 2, 0, 0);
+          // 180° Rotation Fix
+          group.current.rotation.set(Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
 
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
@@ -243,14 +237,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             } else {
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
             }
-            armUpperRef.current.rotation.x = armX * 0.65;
+            armUpperRef.current.rotation.x = -armX * 0.65;
             armUpperRef.current.rotation.z = zSign * (0.15 + Math.sin(ph) * 0.08);
 
             let elbowBend: number;
             if (norm < 0.5) {
-              elbowBend = -Math.sin(norm * Math.PI * 2) * (Math.PI / 2.1);
+              elbowBend = Math.sin(norm * Math.PI * 2) * (Math.PI / 2.1);
             } else {
-              elbowBend = -Math.sin((norm - 0.5) * Math.PI) * 0.5;
+              elbowBend = Math.sin((norm - 0.5) * Math.PI) * 0.5;
             }
             armForearmRef.current.rotation.x = elbowBend;
           };
@@ -264,9 +258,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
           const computeLeg = (phaseOffset: number, legUpperRef, legCalfRef) => {
             if (!legUpperRef.current || !legCalfRef.current) return;
-            const legSin = Math.sin(t * kickSpeed + phaseOffset);
+            const legSin = -Math.sin(t * kickSpeed + phaseOffset);
             legUpperRef.current.rotation.x = legSin * kickAmp;
-            const kneeBend = -Math.max(0, legSin) * 0.62;
+            const kneeBend = Math.max(0, legSin) * 0.62;
             legCalfRef.current.rotation.x = kneeBend;
           };
 
