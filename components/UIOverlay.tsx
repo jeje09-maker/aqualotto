@@ -64,6 +64,32 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     }
   }, [appState, count]);
 
+  useEffect(() => {
+    if (appState === AppState.FINISHED) {
+      if (typeof window !== 'undefined' && (window as any).confetti) {
+        (window as any).confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+        setTimeout(() => {
+          (window as any).confetti({
+            particleCount: 80,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 }
+          });
+          (window as any).confetti({
+            particleCount: 80,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 }
+          });
+        }, 400);
+      }
+    }
+  }, [appState]);
+
   // Open modal with batch text synced
   const handleOpenNameModal = () => {
     setBatchText(swimmerNames.slice(0, count).map((n, i) => n || `${i + 1}번`).join(', '));
