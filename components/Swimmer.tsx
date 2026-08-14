@@ -33,8 +33,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const startTime = useRef(0);
   const collapseAnimProgress = useRef(0);
 
-  const startZ = 3.6; // Starting Block platform position on deck
-  const finishZ = -52.4; // Touchpad position
+  const startZ = 3.6;
+  const finishZ = -52.4;
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
@@ -213,15 +213,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM Pose: rotation (-Math.PI/2, Math.PI, 0)
-          // Head (0,1,0) points FORWARD to -Z.
-          // Chest & Toes (0,0,1) point DOWN into water -Y.
-          // Back & Swim Cap (0,0,-1) point UP to camera +Y.
+          // SWIM Pose: Vertical 180° flip around long pitch/roll axis (rotation: -Math.PI/2, 0, 0)
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
           
-          group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
+          group.current.rotation.set(-Math.PI / 2, 0, 0);
           if (body.current) body.current.rotation.x = 0;
 
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
@@ -414,8 +411,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Foot extending back in streamline pose */}
-            <mesh position={[0, -0.42, -0.06]} castShadow rotation={[-0.2, 0, 0]}>
+            <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
             </mesh>
@@ -433,8 +429,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* Foot extending back in streamline pose */}
-            <mesh position={[0, -0.42, -0.06]} castShadow rotation={[-0.2, 0, 0]}>
+            <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
             </mesh>
