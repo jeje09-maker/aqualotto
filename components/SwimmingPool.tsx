@@ -38,10 +38,10 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       </mesh>
 
       {/* ================= 2. UNDERWATER POOL BASIN ================= */}
-      {/* Solid Deep Blue Pool Floor */}
+      {/* Deep Royal Navy Blue Pool Bottom Tiles (NO WHITE FLOOR!) */}
       <mesh rotation-x={-Math.PI / 2} position={[0, -poolDepth, poolCenterZ]} receiveShadow>
         <planeGeometry args={[poolWidth, poolLength]} />
-        <meshStandardMaterial color="#0048b3" roughness={0.1} metalness={0.2} />
+        <meshStandardMaterial color="#002966" roughness={0.15} metalness={0.3} />
       </mesh>
 
       {/* Black T-Lane Markers on Pool Floor */}
@@ -51,15 +51,15 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
           <group key={`lane-floor-${i}`}>
             <mesh rotation-x={-Math.PI / 2} position={[laneX, -poolDepth + 0.01, poolCenterZ]}>
               <planeGeometry args={[0.35, poolLength - 2]} />
-              <meshStandardMaterial color="#050811" />
+              <meshStandardMaterial color="#0b0f19" />
             </mesh>
             <mesh rotation-x={-Math.PI / 2} position={[laneX, -poolDepth + 0.01, 1.2]}>
               <planeGeometry args={[0.9, 0.35]} />
-              <meshStandardMaterial color="#050811" />
+              <meshStandardMaterial color="#0b0f19" />
             </mesh>
             <mesh rotation-x={-Math.PI / 2} position={[laneX, -poolDepth + 0.01, -51.4]}>
               <planeGeometry args={[0.9, 0.35]} />
-              <meshStandardMaterial color="#050811" />
+              <meshStandardMaterial color="#0b0f19" />
             </mesh>
           </group>
         );
@@ -70,7 +70,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       <group position={[-poolWidth / 2 - 0.25, 0, poolCenterZ]}>
         <mesh position={[0, -poolDepth / 2 + 0.25, 0]}>
           <boxGeometry args={[0.5, poolDepth + 0.5, poolLength]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.15} />
+          <meshStandardMaterial color="#1e293b" roughness={0.2} />
         </mesh>
         <mesh position={[0, 0.52, 0]}>
           <boxGeometry args={[0.54, 0.12, poolLength]} />
@@ -82,7 +82,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       <group position={[poolWidth / 2 + 0.25, 0, poolCenterZ]}>
         <mesh position={[0, -poolDepth / 2 + 0.25, 0]}>
           <boxGeometry args={[0.5, poolDepth + 0.5, poolLength]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.15} />
+          <meshStandardMaterial color="#1e293b" roughness={0.2} />
         </mesh>
         <mesh position={[0, 0.52, 0]}>
           <boxGeometry args={[0.54, 0.12, poolLength]} />
@@ -94,7 +94,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
       <group position={[0, 0, 2.6]}>
         <mesh position={[0, -poolDepth / 2 + 0.25, 0]}>
           <boxGeometry args={[poolWidth + 1.0, poolDepth + 0.5, 0.6]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.15} />
+          <meshStandardMaterial color="#1e293b" roughness={0.2} />
         </mesh>
         <mesh position={[0, 0.52, 0]}>
           <boxGeometry args={[poolWidth + 1.0, 0.12, 0.64]} />
@@ -104,10 +104,10 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
 
       {/* ================= 4. FINISH LINE END WALL & FINA TOUCHPADS (결승 터치패드 & 결승 벽) ================= */}
       <group position={[0, 0, -52.4]}>
-        {/* Solid White Pool End Wall (Height 4.0m) */}
+        {/* Solid Slate Blue Pool End Wall (Height 4.0m) */}
         <mesh position={[0, -poolDepth / 2 + 0.25, 0]}>
           <boxGeometry args={[poolWidth + 1.0, poolDepth + 0.5, 0.6]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.15} />
+          <meshStandardMaterial color="#1e293b" roughness={0.2} />
         </mesh>
         {/* Blue Top Coping Line */}
         <mesh position={[0, 0.52, 0]}>
@@ -154,7 +154,7 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         );
       })}
 
-      {/* ================= 6. STARTING BLOCKS (Vivid Cyan & White on Deck Z = 3.6) ================= */}
+      {/* ================= 6. STARTING BLOCKS (Vivid Cyan Pedestal & Snow White Top) ================= */}
       {Array.from({ length: count }).map((_, i) => {
         const blockX = getLaneX(i, count, laneWidth);
         return (
@@ -175,32 +175,32 @@ const SwimmingPool: React.FC<SwimmingPoolProps> = ({ count }) => {
         );
       })}
 
-      {/* ================= 7. PURE WHITE INDOOR POOL DECK ================= */}
+      {/* ================= 7. DARK ROYAL SLATE BLUE POOL DECK (NO WHITE FLOOR!) ================= */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, poolCenterZ]} receiveShadow>
         <planeGeometry args={[stadiumWidth, stadiumLength]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.2} metalness={0.1} />
+        <meshStandardMaterial color="#0c2340" roughness={0.3} metalness={0.1} />
       </mesh>
 
-      {/* ================= 8. SOLID INDOOR STADIUM ENCLOSURE WALLS (실내 경기장 4면 완전 마감 벽) ================= */}
+      {/* ================= 8. SOLID INDOOR STADIUM ENCLOSURE WALLS ================= */}
       {/* Back Wall behind Start Line */}
       <mesh position={[0, 10, 15]}>
         <boxGeometry args={[stadiumWidth, 24, 2]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.5} />
+        <meshStandardMaterial color="#0b1329" roughness={0.5} />
       </mesh>
       {/* Front Wall behind Finish Line */}
       <mesh position={[0, 10, -65]}>
         <boxGeometry args={[stadiumWidth, 24, 2]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.5} />
+        <meshStandardMaterial color="#0b1329" roughness={0.5} />
       </mesh>
       {/* Left Wall behind Spectator Stand */}
       <mesh position={[-stadiumWidth / 2, 10, poolCenterZ]}>
         <boxGeometry args={[2, 24, stadiumLength]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.5} />
+        <meshStandardMaterial color="#0b1329" roughness={0.5} />
       </mesh>
       {/* Right Wall behind Spectator Stand */}
       <mesh position={[stadiumWidth / 2, 10, poolCenterZ]}>
         <boxGeometry args={[2, 24, stadiumLength]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.5} />
+        <meshStandardMaterial color="#0b1329" roughness={0.5} />
       </mesh>
 
       {/* High Ceiling Trusses with Ultra-Bright Floodlights */}
