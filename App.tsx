@@ -2,15 +2,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import { AppState, Swimmer } from './types';
 import World from './components/World';
 import UIOverlay from './components/UIOverlay';
 
 const COLORS = [
-  '#E65100', '#00C853', '#1565C0', '#AA00FF', '#FFD600', 
-  '#00B8D4', '#FF6D00', '#6200EA', '#64DD17', '#D50000',
-  '#2962FF', '#0091EA', '#00E676', '#00BFA5', '#FFAB00',
-  '#FF3D00', '#C51162', '#304FFE', '#00C853', '#FF6D00'
+  '#FF1744', '#00E676', '#2979FF', '#D500F9', '#FFEA00', 
+  '#00E5FF', '#FF9100', '#AA00FF', '#76FF03', '#F50057',
+  '#3D5AFE', '#00B0FF', '#00E676', '#1DE9B6', '#FFD600',
+  '#FF6D00', '#DD2C00', '#C51162', '#651FFF', '#00BFA5'
 ];
 
 export const getLottoColor = (num: number) => {
@@ -146,13 +147,13 @@ const App: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen bg-sky-950 select-none">
-      <Canvas shadows gl={{ antialias: true }}>
-        {/* Rich Saturated Ocean Blue Sky Background (Zero Washed-Out White Glare!) */}
-        <color attach="background" args={["#0369a1"]} />
+      <Canvas shadows gl={{ antialias: true, toneMapping: THREE.NoToneMapping }}>
+        {/* Vibrant Bright Pure Ocean Sky Background */}
+        <color attach="background" args={["#0284c7"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <ambientLight intensity={0.75} />
-        <directionalLight position={[20, 45, 20]} intensity={2.2} castShadow />
-        <directionalLight position={[-20, 30, -20]} intensity={1.0} />
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[20, 45, 20]} intensity={2.8} castShadow />
+        <directionalLight position={[-20, 30, -20]} intensity={1.4} />
         
         <World 
           appState={appState} 
