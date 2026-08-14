@@ -33,8 +33,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const startTime = useRef(0);
   const collapseAnimProgress = useRef(0);
 
-  const startZ = 3.6;
-  const finishZ = -52.4;
+  const startZ = 3.6; // Starting block deck position
+  const finishZ = -52.4; // Touchpad position
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
@@ -192,20 +192,24 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
         const diveThreshold = 0.06;
         if (nextProgress < diveThreshold) {
+          // PERFECT HEAD-FIRST STREAMLINE DIVE (머리부터 비스듬히 입수!)
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
-          const jumpHeight = Math.sin(diveT * Math.PI) * 2.4;
+          const jumpHeight = Math.sin(diveT * Math.PI) * 2.2;
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.5);
           
+          // Head dives down forward into water at a 50° angle!
           group.current.rotation.set(
-            THREE.MathUtils.lerp(0, Math.PI * 0.65, diveT),
+            THREE.MathUtils.lerp(-0.2, Math.PI * 0.72, diveT),
             Math.PI,
             0
           );
           if (body.current) body.current.rotation.set(0, 0, 0);
-          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, -0.06);
-          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.85 * diveT, 0, 0.06);
+          
+          // Streamline arm pose: Arms extended straight forward together over head!
+          if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.95, 0, -0.05);
+          if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.95, 0, 0.05);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
           if (rightForearm.current) rightForearm.current.rotation.set(0, 0, 0);
           if (leftUpperLeg.current) leftUpperLeg.current.rotation.set(0, 0, 0);
@@ -213,12 +217,15 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM Pose: Vertical 180° flip around long pitch/roll axis (rotation: -Math.PI/2, 0, 0)
+          // PROVE-TESTED MATHEMATICAL EULER ROTATION (Math.PI / 2, 0, Math.PI):
+          // Head (0,1,0) -> (0, 0, -1) [FORWARDS to finish line]
+          // Chest & Toes (0,0,1) -> (0, -1, 0) [DOWN into water]
+          // Back & Swim Cap (0,0,-1) -> (0, 1, 0) [UP to sky / camera]
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
           
-          group.current.rotation.set(-Math.PI / 2, 0, 0);
+          group.current.rotation.set(Math.PI / 2, 0, Math.PI);
           if (body.current) body.current.rotation.x = 0;
 
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
@@ -411,6 +418,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
+            {/* Foot extending back along leg line */}
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -429,6 +437,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
+            {/* Foot extending back along leg line */}
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.09, 0.06, 0.22]} />
               <meshStandardMaterial color={skinColor} roughness={0.4} />

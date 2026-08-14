@@ -145,12 +145,14 @@ const App: React.FC = () => {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-screen bg-slate-950 select-none">
+    <div className="relative w-full h-screen bg-cyan-950 select-none">
       <Canvas shadows gl={{ antialias: true }}>
-        <color attach="background" args={["#0c1a2e"]} />
+        {/* Bright Vibrant Olympic Pool Arena Background Color */}
+        <color attach="background" args={["#0e7490"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[20, 40, 20]} intensity={1.4} castShadow />
+        <ambientLight intensity={1.1} />
+        <directionalLight position={[20, 45, 20]} intensity={1.8} castShadow />
+        <directionalLight position={[-20, 30, -20]} intensity={0.8} />
         
         <World 
           appState={appState} 
