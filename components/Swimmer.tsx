@@ -177,21 +177,22 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // POWERFUL FAR-LAUNCHING DIVE (diveThreshold = 0.065: launches 4.5 meters far forward into pool!)
+        // 30-DEGREE FORWARD DIVE (Shallow 30° entry angle launching 4.5 meters far forward!)
         const diveThreshold = 0.065;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           
-          // Propel 4.5 meters forward far into the water
+          // Propel 4.8 meters far forward horizontally
           const diveDistance = diveT * 4.8;
           group.current.position.z = startZ - diveDistance;
           
-          // Parabolic jump arc
-          const jumpHeight = Math.sin(diveT * Math.PI) * 1.2;
-          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.3);
+          // Smooth shallow arc
+          const jumpHeight = Math.sin(diveT * Math.PI) * 0.5;
+          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.22);
           
-          const divePitch = THREE.MathUtils.lerp(-0.25, -Math.PI * 0.65, diveT);
+          // Shallow 30-degree entry angle relative to water surface (-0.36pi = 30° angle!)
+          const divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.36, diveT);
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
@@ -215,7 +216,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
-          // Freestyle arm strokes WITH HIGH-ELBOW RECOVERY ABOVE BACK!
+          // Freestyle arm strokes
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
@@ -227,7 +228,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
             } else {
               armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
             }
-            // Raised arm stroke lift: -armX * 0.95 lifts arms high above shoulder height!
             armUpperRef.current.rotation.x = -armX * 0.95;
             armUpperRef.current.rotation.z = zSign * (0.22 + Math.sin(ph) * 0.12);
 
@@ -332,7 +332,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <boxGeometry args={[0.08, 0.05, 0.04]} />
               <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.1} />
             </mesh>
-            <mesh position={[0.065, 0, 0]} rotation={[0, -0.2, 0]}>
+            <mesh position={[0.065, 0, 0]} rotation={[0, 0.2, 0]}>
               <boxGeometry args={[0.08, 0.05, 0.04]} />
               <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.1} />
             </mesh>
@@ -343,7 +343,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           </group>
         </group>
 
-        {/* LEFT ARM (Shoulder joint raised to y=0.52 for high shoulder placement!) */}
+        {/* LEFT ARM */}
         <group ref={leftUpperArm} position={[-0.34, 0.52, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
@@ -365,7 +365,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           </group>
         </group>
 
-        {/* RIGHT ARM (Shoulder joint raised to y=0.52 for high shoulder placement!) */}
+        {/* RIGHT ARM */}
         <group ref={rightUpperArm} position={[0.34, 0.52, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
