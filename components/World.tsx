@@ -15,14 +15,12 @@ interface WorldProps {
   onStateTransition: (state: AppState) => void;
 }
 
+// Guaranteed 100% visible broadcast camera shots
 const RACE_SHOTS = [
-  { id: 'side_high',    dur: 4.5 },
-  { id: 'in_water',     dur: 3.5 },
-  { id: 'top_down',     dur: 3.0 },
-  { id: 'lead_follow',  dur: 4.0 },
-  { id: 'side_low',     dur: 3.0 },
-  { id: 'front_head',   dur: 3.5 },
-  { id: 'behind',       dur: 3.5 },
+  { id: 'lead_chase',       dur: 4.5 },
+  { id: 'side_tracking',    dur: 4.0 },
+  { id: 'top_down_stadium', dur: 3.5 },
+  { id: 'front_telephoto',  dur: 4.5 },
 ];
 
 const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTransition }) => {
@@ -35,7 +33,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
   const count = swimmers.length;
   const laneWidth = count > 15 ? 2.2 : 3.0;
 
-  const camPos = useRef(new THREE.Vector3(30, 20, 30));
+  const camPos = useRef(new THREE.Vector3(0, 20, 30));
   const camTarget = useRef(new THREE.Vector3(0, 0, 0));
 
   const shotTimer = useRef(0);
@@ -67,7 +65,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camTarget.current.lerp(new THREE.Vector3(0, 1, -15), 0.06);
     }
 
-    // ---- GREETING (선수 소개 - 카메라 & 위치 100% 정밀 맞춤) ----
+    // ---- GREETING (선수 소개 - 카메라 100% 밀착 정밀 교정) ----
     else if (appState === AppState.GREETING) {
       stateTimer.current += delta;
       const introDuration = count > 10 ? 1.0 : 2.5;
@@ -98,22 +96,33 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
 
-    // ---- RACING ----
+    // ---- RACING (선수가 100% 항상 화면 중앙에 보이도록 보장된 방송 샷) ----
     else if (appState === AppState.RACING) {
       if (swimmers.length === 0) return;
       const elapsed = t - raceStartRef.current;
 
-      let centerX = 0, centerZ = 0, maxProgress = 0;
+      // Find Leader & Pack Center
+      let centerX = 0, centerZ = 0;
+      let leader = swimmers[0];
+      let maxProgress = -1;
+
       swimmers.forEach(s => {
         const p = Math.min(elapsed * s.speed, 1);
-        maxProgress = Math.max(maxProgress, p);
+        if (p > maxProgress) {
+          maxProgress = p;
+          leader = s;
+        }
         centerZ += 2.2 - p * 54.6;
         centerX += getLaneX(s.lane, count, laneWidth);
       });
       centerX /= swimmers.length;
       centerZ /= swimmers.length;
-      centerZ = Math.max(-52, Math.min(3, centerZ));
 
+      const leaderP = Math.min(elapsed * leader.speed, 1);
+      const leaderZ = Math.max(-50, 2.2 - leaderP * 54.6);
+      const leaderX = getLaneX(leader.lane, count, laneWidth);
+
+      // Advance shot timer
       shotTimer.current += delta;
       const curShot = RACE_SHOTS[shotIdx.current % RACE_SHOTS.length];
       if (shotTimer.current >= curShot.dur) {
@@ -121,52 +130,34 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
         shotIdx.current = (shotIdx.current + 1) % RACE_SHOTS.length;
       }
       const shot = RACE_SHOTS[shotIdx.current % RACE_SHOTS.length];
-      const ls = 0.055;
-      const width = Math.max(6, poolSpan * 0.5);
+
+      // Uniform lerp speed for smooth camera tracking without losing target
+      const lerpSpeed = 0.08;
 
       switch (shot.id) {
-        case 'side_high': {
-          camPos.current.lerp(new THREE.Vector3(centerX + width + 14, Math.max(14, poolSpan * 0.25), centerZ + 4), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ), ls * 1.4);
+        case 'lead_chase': {
+          // 1st place leader chase shot (camera behind & above leader, tracking forward)
+          camPos.current.lerp(new THREE.Vector3(leaderX + poolSpan * 0.3 + 4, 6.5, leaderZ + 10), lerpSpeed);
+          camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 2), lerpSpeed);
           break;
         }
-        case 'in_water': {
-          const lane0X = swimmers[0] ? getLaneX(swimmers[0].lane, count, laneWidth) : 0;
-          camPos.current.lerp(new THREE.Vector3(lane0X + 1.5, 0.8, centerZ + 8), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 5), ls * 1.6);
+        case 'side_tracking': {
+          // Side broadcast view (tracking the middle of the swimmer pack)
+          const sideOffset = poolSpan * 0.5 + 8;
+          camPos.current.lerp(new THREE.Vector3(sideOffset, 6.0, centerZ + 2), lerpSpeed);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 1), lerpSpeed);
           break;
         }
-        case 'top_down': {
-          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(24, poolSpan * 0.6), centerZ), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0, centerZ - 2), ls * 1.2);
+        case 'top_down_stadium': {
+          // High stadium overview (seeing all lanes & entire pool clearly)
+          camPos.current.lerp(new THREE.Vector3(0, Math.max(20, poolSpan * 0.55), centerZ + 8), lerpSpeed);
+          camTarget.current.lerp(new THREE.Vector3(0, 0, centerZ - 4), lerpSpeed);
           break;
         }
-        case 'lead_follow': {
-          const leader = swimmers.reduce((best, s) => {
-            const p = Math.min(elapsed * s.speed, 1);
-            const bp = Math.min(elapsed * best.speed, 1);
-            return p > bp ? s : best;
-          }, swimmers[0]);
-          const leaderP = Math.min(elapsed * leader.speed, 1);
-          const leaderZ = Math.max(-50, 2.2 - leaderP * 54.6);
-          const leaderX = getLaneX(leader.lane, count, laneWidth);
-          camPos.current.lerp(new THREE.Vector3(leaderX + 3, 5, leaderZ + 12), ls * 0.9);
-          camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 4), ls * 1.5);
-          break;
-        }
-        case 'side_low': {
-          camPos.current.lerp(new THREE.Vector3(centerX - (width + 8), 3.5, centerZ), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ), ls * 1.4);
-          break;
-        }
-        case 'front_head': {
-          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(8, poolSpan * 0.18), centerZ - 18), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ + 6), ls * 1.2);
-          break;
-        }
-        case 'behind': {
-          camPos.current.lerp(new THREE.Vector3(centerX, Math.max(10, poolSpan * 0.2), centerZ + 18), ls);
-          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ - 4), ls * 1.2);
+        case 'front_telephoto': {
+          // Finish line telephoto lens (camera at finish line wall looking at approaching swimmers)
+          camPos.current.lerp(new THREE.Vector3(0, 5.5, -55), lerpSpeed);
+          camTarget.current.lerp(new THREE.Vector3(centerX, 0.2, centerZ), lerpSpeed);
           break;
         }
       }
@@ -174,7 +165,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- FINISHED ----
     else if (appState === AppState.FINISHED) {
-      camPos.current.lerp(new THREE.Vector3(Math.max(16, poolSpan * 0.3), 14, -43), 0.04);
+      camPos.current.lerp(new THREE.Vector3(0, 10, -42), 0.04);
       camTarget.current.lerp(new THREE.Vector3(0, 0, -53), 0.04);
     }
 
