@@ -41,7 +41,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const laneX = getLaneX(swimmer.lane, totalSwimmers, laneWidth);
   const animMult = useRef(0.85 + Math.random() * 0.35);
 
-  const skinColor = '#ffdbac'; // Natural bright skin tone
+  const skinColor = '#e59866'; // Rich warm natural skin tone
   const swimColor = swimmer.color || '#2563eb';
 
   // Number Badge Texture
@@ -177,25 +177,17 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        const diveThreshold = 0.08;
+        // FAST REALISTIC LOW-PROFILE RACING DIVE (0.035 threshold = fast snappy 0.2s plunge into water!)
+        const diveThreshold = 0.035;
         if (nextProgress < diveThreshold) {
-          // REALISTIC PARABOLIC HEAD-FIRST DIVE
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           
-          const jumpHeight = Math.sin(diveT * Math.PI) * 1.8;
-          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.35);
+          const jumpHeight = Math.sin(diveT * Math.PI) * 0.6; // Low-profile realistic diving arc
+          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.3);
           
-          let divePitch: number;
-          if (diveT < 0.2) {
-            divePitch = THREE.MathUtils.lerp(0, -Math.PI * 0.70, diveT / 0.2);
-          } else if (diveT < 0.7) {
-            divePitch = -Math.PI * 0.75;
-          } else {
-            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.75, -Math.PI * 0.50, (diveT - 0.7) / 0.3);
-          }
-
+          const divePitch = THREE.MathUtils.lerp(-0.2, -Math.PI * 0.65, diveT);
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
@@ -280,23 +272,19 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           <spriteMaterial map={nameplateTexture} depthTest={false} />
         </sprite>
 
-        {/* Athletic Torso - Broad Straight Athletic Deltoids (NO ROUND BALL SPHERES!) */}
+        {/* Athletic Human Torso - Smooth Rounded Shoulder Capsule (자연스럽게 둥글게 이어지는 진짜 사람의 어깨 체형!) */}
         <group position={[0, 0.2, 0]}>
-          <mesh castShadow position={[0, 0.30, 0]}>
-            <boxGeometry args={[0.72, 0.34, 0.36]} />
-            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
+          <mesh castShadow position={[0, 0.24, 0]} scale={[1.38, 1.0, 0.88]}>
+            <capsuleGeometry args={[0.24, 0.26, 12, 24]} />
+            <meshStandardMaterial color={skinColor} roughness={0.35} metalness={0.08} />
           </mesh>
-          <mesh castShadow position={[-0.14, 0.32, 0.14]} rotation={[0.1, 0, 0]}>
-            <boxGeometry args={[0.26, 0.20, 0.12]} />
-            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
+          <mesh castShadow position={[-0.12, 0.28, 0.12]} rotation={[0.1, 0, 0]}>
+            <boxGeometry args={[0.22, 0.18, 0.10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.35} metalness={0.08} />
           </mesh>
-          <mesh castShadow position={[0.14, 0.32, 0.14]} rotation={[0.1, 0, 0]}>
-            <boxGeometry args={[0.26, 0.20, 0.12]} />
-            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
-          </mesh>
-          <mesh castShadow position={[0, -0.04, 0]}>
-            <cylinderGeometry args={[0.27, 0.22, 0.34, 24]} />
-            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
+          <mesh castShadow position={[0.12, 0.28, 0.12]} rotation={[0.1, 0, 0]}>
+            <boxGeometry args={[0.22, 0.18, 0.10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.35} metalness={0.08} />
           </mesh>
         </group>
 
@@ -350,7 +338,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* LEFT ARM */}
-        <group ref={leftUpperArm} position={[-0.36, 0.44, 0]}>
+        <group ref={leftUpperArm} position={[-0.34, 0.42, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
@@ -372,7 +360,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* RIGHT ARM */}
-        <group ref={rightUpperArm} position={[0.36, 0.44, 0]}>
+        <group ref={rightUpperArm} position={[0.34, 0.42, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
@@ -431,8 +419,8 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
       </group>
 
-      {/* Dynamic Water Splash */}
-      {appState === AppState.RACING && !swimmer.isCollapsed && progress > 0.03 && progress < 0.98 && (
+      {/* Dynamic Water Splash ONLY WHEN IN WATER (ZERO BUBBLES IN THE AIR!) */}
+      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.035 && progress < 0.98 && (
         <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
       )}
     </group>

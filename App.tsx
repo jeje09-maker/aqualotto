@@ -7,10 +7,10 @@ import World from './components/World';
 import UIOverlay from './components/UIOverlay';
 
 const COLORS = [
-  '#FF1744', '#00E676', '#2979FF', '#D500F9', '#FFEA00', 
-  '#00E5FF', '#FF9100', '#AA00FF', '#76FF03', '#F50057',
-  '#3D5AFE', '#00B0FF', '#00E676', '#1DE9B6', '#FFD600',
-  '#FF6D00', '#DD2C00', '#C51162', '#651FFF', '#00BFA5'
+  '#E65100', '#00C853', '#1565C0', '#AA00FF', '#FFD600', 
+  '#00B8D4', '#FF6D00', '#6200EA', '#64DD17', '#D50000',
+  '#2962FF', '#0091EA', '#00E676', '#00BFA5', '#FFAB00',
+  '#FF3D00', '#C51162', '#304FFE', '#00C853', '#FF6D00'
 ];
 
 export const getLottoColor = (num: number) => {
@@ -119,7 +119,6 @@ const App: React.FC = () => {
 
     setSwimmers(initialSwimmers);
     setResults([]);
-    // Direct transition to READY (Skip athlete intro greeting completely!)
     setAppState(AppState.READY);
   }, [count, swimmerNames, isLottoMode]);
 
@@ -146,14 +145,14 @@ const App: React.FC = () => {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-screen bg-sky-900 select-none">
+    <div className="relative w-full h-screen bg-sky-950 select-none">
       <Canvas shadows gl={{ antialias: true }}>
-        {/* Bright Crisp Vibrant Olympic Cyan Sky Background */}
-        <color attach="background" args={["#38bdf8"]} />
+        {/* Rich Saturated Ocean Blue Sky Background (Zero Washed-Out White Glare!) */}
+        <color attach="background" args={["#0369a1"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <ambientLight intensity={1.6} />
-        <directionalLight position={[20, 45, 20]} intensity={2.5} castShadow />
-        <directionalLight position={[-20, 30, -20]} intensity={1.2} />
+        <ambientLight intensity={0.75} />
+        <directionalLight position={[20, 45, 20]} intensity={2.2} castShadow />
+        <directionalLight position={[-20, 30, -20]} intensity={1.0} />
         
         <World 
           appState={appState} 
@@ -167,7 +166,7 @@ const App: React.FC = () => {
           maxPolarAngle={Math.PI / 2.05} 
           enabled={appState === AppState.IDLE || appState === AppState.FINISHED}
         />
-        <Environment preset="sunset" />
+        <Environment preset="city" />
       </Canvas>
 
       <UIOverlay 
