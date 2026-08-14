@@ -177,21 +177,17 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // 30-DEGREE FORWARD DIVE (Shallow 30° entry angle launching 4.5 meters far forward!)
         const diveThreshold = 0.065;
         if (nextProgress < diveThreshold) {
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           
-          // Propel 4.8 meters far forward horizontally
           const diveDistance = diveT * 4.8;
           group.current.position.z = startZ - diveDistance;
           
-          // Smooth shallow arc
           const jumpHeight = Math.sin(diveT * Math.PI) * 0.5;
-          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.22);
+          group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY - 0.02);
           
-          // Shallow 30-degree entry angle relative to water surface (-0.36pi = 30° angle!)
           const divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.36, diveT);
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
@@ -205,10 +201,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
+          // PERFECT SURFACE WATER DRAFTING POSITION (Y = 0.02 -> Swim cap 50% above water, shoulders break water!)
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.22, 0.3);
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, 0.02, 0.3);
           
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
           if (body.current) body.current.rotation.x = 0;
@@ -257,8 +253,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           computeLeg(0, leftUpperLeg, leftCalf);
           computeLeg(Math.PI, rightUpperLeg, rightCalf);
 
+          // Body roll during freestyle stroke (shoulders break above water rhythmically!)
           if (body.current) {
-            body.current.rotation.z = Math.sin(cycle * 0.5) * 0.24;
+            body.current.rotation.z = Math.sin(cycle * 0.5) * 0.28;
           }
         }
 
