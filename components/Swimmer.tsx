@@ -41,7 +41,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const laneX = getLaneX(swimmer.lane, totalSwimmers, laneWidth);
   const animMult = useRef(0.85 + Math.random() * 0.35);
 
-  const skinColor = '#e5b88a';
+  const skinColor = '#ffdbac'; // Bright vivid natural skin tone
   const swimColor = swimmer.color || '#2563eb';
 
   // Number Badge Texture
@@ -122,19 +122,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       return;
     }
 
-    // ---- GREETING ----
-    if (appState === AppState.GREETING) {
-      group.current.position.set(laneX, onBlockY, startZ);
-      if (isCurrentIntro) {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.15);
-        if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -2.2 + Math.sin(t * 8) * 0.4, 0.2);
-      } else {
-        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.PI, 0.1);
-        if (rightUpperArm.current) rightUpperArm.current.rotation.z = THREE.MathUtils.lerp(rightUpperArm.current.rotation.z, -0.2, 0.1);
-      }
-      return;
-    }
-
     // ---- READY ----
     if (appState === AppState.READY) {
       group.current.position.set(laneX, onBlockY, startZ);
@@ -192,19 +179,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
         const diveThreshold = 0.08;
         if (nextProgress < diveThreshold) {
-          // REALISTIC PARABOLIC HEAD-FIRST DIVE (머리부터 물에 입수!)
+          // REALISTIC PARABOLIC HEAD-FIRST DIVE
           const diveT = nextProgress / diveThreshold;
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           
-          // Parabolic jump arc
           const jumpHeight = Math.sin(diveT * Math.PI) * 1.8;
           group.current.position.y = onBlockY + jumpHeight - diveT * (onBlockY + 0.35);
           
-          // Pitch angle curve:
-          // 0.0 ~ 0.2: Quick pitch forward (-0.70pi)
-          // 0.2 ~ 0.7: Locked head-first downward plunge (-0.75pi) -> Head points DOWN into water (Y=-0.71), Feet in AIR behind!
-          // 0.7 ~ 1.0: Level-off underwater glide (-0.50pi) -> Smoothly levels into swim pose
           let divePitch: number;
           if (diveT < 0.2) {
             divePitch = THREE.MathUtils.lerp(0, -Math.PI * 0.70, diveT / 0.2);
@@ -217,7 +199,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
-          // Streamline dive pose: Both arms extended straight over head together!
           if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI * 0.95, 0, -0.05);
           if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI * 0.95, 0, 0.05);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
@@ -228,10 +209,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
           // SWIM ROTATION (-Math.PI / 2, Math.PI, 0)
-          // Head (0,1,0) -> (0, 0, -1) [Head points FORWARD to finish line -Z!]
-          // Feet (0,-1,0) -> (0, 0, 1) [Feet point BEHIND to start line +Z!]
-          // Chest & Toes (0,0,1) -> (0, -1, 0) [Chest & Toes point DOWN into water -Y!]
-          // Back & Swim Cap (0,0,-1) -> (0, 1, 0) [Back & Cap point UP to camera +Y!]
           group.current.position.x = laneX;
           group.current.position.z = startZ - nextProgress * poolLength;
           group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.15, 0.3);
@@ -242,7 +219,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           const swimSpeed = Math.max(2.5, Math.min(14, (4.2 + p_var * 3 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
-          // Freestyle arm strokes
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef, zSign: number) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
@@ -269,7 +245,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           computeArm(0, leftUpperArm, leftForearm, -1);
           computeArm(Math.PI, rightUpperArm, rightForearm, 1);
 
-          // Flutter kick
           const kickSpeed = Math.max(5.0, swimSpeed * 1.65);
           const kickAmp = 0.44;
 
@@ -301,26 +276,26 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       <group ref={body}>
 
         {/* 3D Floating Nameplate Badge */}
-        <sprite position={[0, 1.35, 0]} scale={[1.8, 0.45, 1]}>
+        <sprite position={[0, 1.45, 0]} scale={[1.8, 0.45, 1]}>
           <spriteMaterial map={nameplateTexture} depthTest={false} />
         </sprite>
 
-        {/* Athletic Torso - Chest & Abs Muscular Contours */}
+        {/* Athletic Torso - Broad Rounded Oval Upper Chest (양쪽으로 넓은 둥근 수영선수 원형 상체) */}
         <group position={[0, 0.2, 0]}>
-          <mesh castShadow position={[0, 0.25, 0]}>
-            <cylinderGeometry args={[0.32, 0.26, 0.38, 16]} />
+          <mesh castShadow position={[0, 0.28, 0]} scale={[1.42, 1.0, 1.05]}>
+            <cylinderGeometry args={[0.34, 0.26, 0.38, 32]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
-          <mesh castShadow position={[-0.11, 0.32, 0.1]} rotation={[0.1, 0, 0]}>
-            <boxGeometry args={[0.18, 0.16, 0.12]} />
+          <mesh castShadow position={[-0.15, 0.34, 0.08]} rotation={[0.1, 0, 0]}>
+            <sphereGeometry args={[0.17, 24, 16]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
-          <mesh castShadow position={[0.11, 0.32, 0.1]} rotation={[0.1, 0, 0]}>
-            <boxGeometry args={[0.18, 0.16, 0.12]} />
+          <mesh castShadow position={[0.15, 0.34, 0.08]} rotation={[0.1, 0, 0]}>
+            <sphereGeometry args={[0.17, 24, 16]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.08} />
           </mesh>
           <mesh castShadow position={[0, -0.06, 0]}>
-            <cylinderGeometry args={[0.26, 0.22, 0.32, 16]} />
+            <cylinderGeometry args={[0.27, 0.22, 0.32, 24]} />
             <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
         </group>
@@ -328,21 +303,21 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         {/* Swim Trunks */}
         <group position={[0, -0.18, 0]}>
           <mesh castShadow>
-            <cylinderGeometry args={[0.23, 0.21, 0.35, 16]} />
+            <cylinderGeometry args={[0.24, 0.22, 0.35, 24]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} metalness={0.2} />
           </mesh>
           <mesh position={[0, 0.15, 0]}>
-            <torusGeometry args={[0.235, 0.02, 8, 20]} />
+            <torusGeometry args={[0.245, 0.02, 8, 24]} />
             <meshStandardMaterial color={swimmer.capColor || '#ffffff'} roughness={0.3} />
           </mesh>
-          <mesh position={[0, 0.02, 0.22]} rotation={[0, 0, 0]}>
+          <mesh position={[0, 0.02, 0.23]} rotation={[0, 0, 0]}>
             <planeGeometry args={[0.16, 0.16]} />
             <meshStandardMaterial map={numberTexture} transparent roughness={0.5} />
           </mesh>
         </group>
 
         {/* Anatomical Head with Swim Cap & Tinted Goggles */}
-        <group position={[0, 0.72, 0]}>
+        <group position={[0, 0.74, 0]}>
           <mesh castShadow>
             <sphereGeometry args={[0.19, 24, 24]} />
             <meshStandardMaterial color={skinColor} roughness={0.4} />
@@ -375,18 +350,18 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* LEFT ARM */}
-        <group ref={leftUpperArm} position={[-0.32, 0.42, 0]}>
+        <group ref={leftUpperArm} position={[-0.36, 0.44, 0]}>
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[0.085, 12, 12]} />
+            <sphereGeometry args={[0.09, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <mesh position={[0, -0.21, 0]} castShadow>
-            <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
+            <capsuleGeometry args={[0.07, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={leftForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
+              <capsuleGeometry args={[0.058, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.34, 0.03]} castShadow>
@@ -397,18 +372,18 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* RIGHT ARM */}
-        <group ref={rightUpperArm} position={[0.32, 0.42, 0]}>
+        <group ref={rightUpperArm} position={[0.36, 0.44, 0]}>
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[0.085, 12, 12]} />
+            <sphereGeometry args={[0.09, 12, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <mesh position={[0, -0.21, 0]} castShadow>
-            <capsuleGeometry args={[0.068, 0.36, 6, 12]} />
+            <capsuleGeometry args={[0.07, 0.36, 6, 12]} />
             <meshStandardMaterial color={skinColor} roughness={0.35} />
           </mesh>
           <group ref={rightForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
-              <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
+              <capsuleGeometry args={[0.058, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.34, 0.03]} castShadow>
@@ -419,14 +394,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* LEFT LEG & FOOT */}
-        <group ref={leftUpperLeg} position={[-0.13, -0.36, 0]}>
+        <group ref={leftUpperLeg} position={[-0.14, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
-            <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
+            <capsuleGeometry args={[0.09, 0.42, 6, 12]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
           <group ref={leftCalf} position={[0, -0.52, 0]}>
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
+              <capsuleGeometry args={[0.07, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>
@@ -437,14 +412,14 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         </group>
 
         {/* RIGHT LEG & FOOT */}
-        <group ref={rightUpperLeg} position={[0.13, -0.36, 0]}>
+        <group ref={rightUpperLeg} position={[0.14, -0.36, 0]}>
           <mesh position={[0, -0.25, 0]} castShadow>
-            <capsuleGeometry args={[0.088, 0.42, 6, 12]} />
+            <capsuleGeometry args={[0.09, 0.42, 6, 12]} />
             <meshStandardMaterial color={swimColor} roughness={0.4} />
           </mesh>
           <group ref={rightCalf} position={[0, -0.52, 0]}>
             <mesh position={[0, -0.2, 0]} castShadow>
-              <capsuleGeometry args={[0.068, 0.38, 6, 12]} />
+              <capsuleGeometry args={[0.07, 0.38, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
             <mesh position={[0, -0.42, 0.06]} castShadow rotation={[0.2, 0, 0]}>

@@ -7,7 +7,7 @@ import World from './components/World';
 import UIOverlay from './components/UIOverlay';
 
 const COLORS = [
-  '#FF3D00', '#00E676', '#2979FF', '#D500F9', '#FFEA00', 
+  '#FF1744', '#00E676', '#2979FF', '#D500F9', '#FFEA00', 
   '#00E5FF', '#FF9100', '#AA00FF', '#76FF03', '#F50057',
   '#3D5AFE', '#00B0FF', '#00E676', '#1DE9B6', '#FFD600',
   '#FF6D00', '#DD2C00', '#C51162', '#651FFF', '#00BFA5'
@@ -119,7 +119,8 @@ const App: React.FC = () => {
 
     setSwimmers(initialSwimmers);
     setResults([]);
-    setAppState(AppState.GREETING);
+    // Direct transition to READY (Skip athlete intro greeting completely!)
+    setAppState(AppState.READY);
   }, [count, swimmerNames, isLottoMode]);
 
   const handleFinish = useCallback((swimmer: Swimmer) => {
@@ -145,14 +146,14 @@ const App: React.FC = () => {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-screen bg-cyan-950 select-none">
+    <div className="relative w-full h-screen bg-sky-900 select-none">
       <Canvas shadows gl={{ antialias: true }}>
-        {/* Bright Vibrant Olympic Pool Arena Background Color */}
-        <color attach="background" args={["#0e7490"]} />
+        {/* Bright Crisp Vibrant Olympic Cyan Sky Background */}
+        <color attach="background" args={["#38bdf8"]} />
         <PerspectiveCamera makeDefault position={[35, 25, 35]} fov={42} />
-        <ambientLight intensity={1.1} />
-        <directionalLight position={[20, 45, 20]} intensity={1.8} castShadow />
-        <directionalLight position={[-20, 30, -20]} intensity={0.8} />
+        <ambientLight intensity={1.6} />
+        <directionalLight position={[20, 45, 20]} intensity={2.5} castShadow />
+        <directionalLight position={[-20, 30, -20]} intensity={1.2} />
         
         <World 
           appState={appState} 
@@ -166,7 +167,7 @@ const App: React.FC = () => {
           maxPolarAngle={Math.PI / 2.05} 
           enabled={appState === AppState.IDLE || appState === AppState.FINISHED}
         />
-        <Environment preset="city" />
+        <Environment preset="sunset" />
       </Canvas>
 
       <UIOverlay 
