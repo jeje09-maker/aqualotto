@@ -178,41 +178,39 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
-        // ================= 1. DIVE & EXACT 3.0-SECOND INVISIBLE UNDERWATER GLIDE =================
-        // elapsed 0.0s ~ 0.5s: Slanted Dive Entry (-35° pitch)
-        // elapsed 0.5s ~ 3.5s: EXACTLY 3.0 FULL SECONDS COMPLETELY 100% INVISIBLE UNDERWATER (Y = -2.8m deep)
-        // elapsed 3.5s ~ 4.2s: Slanted Ascending Breakout (+25° pitch) to surface Y = -0.10m
+        // ================= 1. SMOOTH DIAGONAL PARABOLIC DIVE & NATURAL RESURFACING =================
+        // elapsed 0.0s ~ 0.8s: Head rises slightly at takeoff, body enters water along a clean smooth diagonal trajectory (NO vertical plunging!)
+        // elapsed 0.8s ~ 2.0s: Shallow underwater glide (Y = -0.45m) smoothly ascending along sine curve to water surface (Y = -0.10m)
+        // elapsed >= 2.0s: Surface swimming (fixed surface level Y = -0.10m, ZERO pop-out / flying fish jumping!)
         group.current.position.x = laneX;
         group.current.position.z = startZ - nextProgress * poolLength;
 
-        if (elapsed < 4.2) {
-          let jumpHeight: number;
-          let divePitch: number;
+        if (elapsed < 2.0) {
+          if (elapsed < 0.8) {
+            // Stage 1 (0.0s ~ 0.8s): Smooth parabolic takeoff (head rises slightly) & diagonal entry into water
+            const tNorm = elapsed / 0.8;
+            const baseLerpY = THREE.MathUtils.lerp(onBlockY, -0.45, tNorm);
+            const headRiseArc = Math.sin(tNorm * Math.PI) * 0.25; // Smooth upward head arc at takeoff
+            group.current.position.y = baseLerpY + headRiseArc;
 
-          if (elapsed < 0.5) {
-            // Stage 1 (0 ~ 0.5s): Launch off block, slanted dive entry downward (-63° pitch)
-            const tNorm = elapsed / 0.5;
-            jumpHeight = Math.sin(tNorm * Math.PI * 0.5) * 0.6;
-            divePitch = THREE.MathUtils.lerp(-0.15, -Math.PI * 0.35, tNorm);
-          } else if (elapsed < 3.5) {
-            // Stage 2 (0.5s ~ 3.5s: EXACTLY 3.0 FULL SECONDS COMPLETELY INVISIBLE UNDERWATER!)
-            const tNorm = (elapsed - 0.5) / 3.0;
-            // Submerged Y = -2.8m deep under water! 100% COMPLETELY INVISIBLE!
-            jumpHeight = -3.2; 
-            // Gliding forward horizontally underwater (-90° pitch)
-            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.35, -Math.PI * 0.50, Math.min(1, tNorm * 3.0));
+            // Smooth diagonal pitch (curves smoothly from crouched stance -0.35 to horizontal -Math.PI/2)
+            const smoothT = Math.sin(tNorm * Math.PI * 0.5);
+            const divePitch = THREE.MathUtils.lerp(-0.35, -Math.PI / 2, smoothT);
+            group.current.rotation.set(divePitch, Math.PI, 0);
           } else {
-            // Stage 3 (3.5s ~ 4.2s): Slanted ascending breakout upward (+25° pitch) to surface Y = -0.10m
-            const tNorm = (elapsed - 3.5) / 0.7;
-            jumpHeight = -3.2 + tNorm * 2.68;
-            divePitch = THREE.MathUtils.lerp(-Math.PI * 0.35, -Math.PI * 0.50, tNorm);
+            // Stage 2 (0.8s ~ 2.0s): Shallow underwater glide and smooth sine wave rise to water surface
+            const tNorm = (elapsed - 0.8) / 1.2;
+            const smoothRise = Math.sin(tNorm * Math.PI * 0.5); // Smooth sine curve 0 to 1
+            group.current.position.y = THREE.MathUtils.lerp(-0.45, -0.10, smoothRise);
+
+            // Gentle level pitch (horizontal with subtle natural rise tilt)
+            const pitchOffset = Math.sin(tNorm * Math.PI) * 0.04;
+            group.current.rotation.set(-Math.PI / 2 + pitchOffset, Math.PI, 0);
           }
 
-          group.current.position.y = onBlockY + jumpHeight;
-          group.current.rotation.set(divePitch, Math.PI, 0);
           if (body.current) body.current.rotation.set(0, 0, 0);
           
-          // BOTH ARMS EXTENDED 100% STRAIGHT OVER THE HEAD IN OLYMPIC STREAMLINE POSE!
+          // OLYMPIC STREAMLINE POSE (ARMS EXTENDED OVERHEAD)
           if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI, 0, 0);
           if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI, 0, 0);
           if (leftForearm.current) leftForearm.current.rotation.set(0, 0, 0);
@@ -222,9 +220,9 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           if (leftCalf.current) leftCalf.current.rotation.set(0, 0, 0);
           if (rightCalf.current) rightCalf.current.rotation.set(0, 0, 0);
         } else {
-          // ================= 2. BREAKOUT SURFACE SWIM (EXACTLY AFTER 3.0s UNDERWATER) =================
-          // Y = -0.10m: Body submerged underwater, top half of swim cap & goggles visible at water surface!
-          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.10, 0.2);
+          // ================= 2. BREAKOUT SURFACE SWIM (AFTER 2.0s UNDERWATER) =================
+          // Y = -0.10m: Body submerged in water, top half of swim cap & goggles visible at surface!
+          group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -0.10, 0.15);
           
           // LASER-STRAIGHT FORWARD ORIENTATION (Y=PI, Z=0 FIXED, ZERO WOBBLE!)
           group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
@@ -273,7 +271,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
         if (nextProgress >= 1) onReachedEnd();
       } else {
-        group.current.position.y = -0.12;
+        group.current.position.y = -0.10;
       }
     }
   });
@@ -352,7 +350,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           </group>
         </group>
 
-        {/* LEFT ARM (Straight 100% Extended 5-Finger Paddle Hand!) */}
+        {/* LEFT ARM (Natural Rounded Hand) */}
         <group ref={leftUpperArm} position={[-0.34, 0.52, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
@@ -367,15 +365,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
               <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
-            {/* 100% Straight Extended 5-Finger Open Paddle Hand! */}
-            <mesh position={[0, -0.36, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.02, 0.24]} />
-              <meshStandardMaterial color={skinColor} roughness={0.35} />
-            </mesh>
           </group>
         </group>
 
-        {/* RIGHT ARM (Straight 100% Extended 5-Finger Paddle Hand!) */}
+        {/* RIGHT ARM (Natural Rounded Hand) */}
         <group ref={rightUpperArm} position={[0.34, 0.52, 0]}>
           <mesh position={[0, 0, 0]}>
             <sphereGeometry args={[0.08, 12, 12]} />
@@ -388,11 +381,6 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           <group ref={rightForearm} position={[0, -0.44, 0]}>
             <mesh position={[0, -0.17, 0]} castShadow>
               <capsuleGeometry args={[0.055, 0.32, 6, 12]} />
-              <meshStandardMaterial color={skinColor} roughness={0.35} />
-            </mesh>
-            {/* 100% Straight Extended 5-Finger Open Paddle Hand! */}
-            <mesh position={[0, -0.36, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.02, 0.24]} />
               <meshStandardMaterial color={skinColor} roughness={0.35} />
             </mesh>
           </group>
