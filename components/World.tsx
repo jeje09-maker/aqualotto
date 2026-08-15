@@ -78,7 +78,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       centerX /= swimmers.length;
 
       const startZ = 3.6;
-      const finishZ = -52.4;
+      const finishZ = -51.05;
       const leaderZ = startZ - maxProgress * Math.abs(startZ - finishZ);
       const leaderX = getLaneX(leader.lane, count, laneWidth);
 
@@ -98,7 +98,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
     // ---- FINISHED (결승선 완주 후 터치패드 및 전광판 하이라이트 뷰) ----
     else if (appState === AppState.FINISHED) {
       camPos.current.lerp(new THREE.Vector3(0, 7.5, -42.0), 0.06);
-      camTarget.current.lerp(new THREE.Vector3(0, -0.2, -52.4), 0.06);
+      camTarget.current.lerp(new THREE.Vector3(0, -0.2, -51.05), 0.06);
     }
 
     camera.position.copy(camPos.current);

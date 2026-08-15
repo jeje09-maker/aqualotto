@@ -34,7 +34,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const collapseAnimProgress = useRef(0);
 
   const startZ = 3.6;
-  const finishZ = -52.4;
+  const finishZ = -51.05; // Swimmer hands touch the touchpad surface (Z=-52.04) cleanly without penetrating wall!
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
@@ -159,9 +159,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       }
 
       if (appState === AppState.FINISHED && currentProgressRef.current >= 1) {
-        group.current.position.set(laneX, 0.4, finishZ + 0.5);
-        group.current.rotation.set(-0.2, Math.PI, 0);
-        if (rightUpperArm.current) rightUpperArm.current.rotation.z = -2.0 + Math.sin(t * 6) * 0.3;
+        group.current.position.set(laneX, -0.10, finishZ);
+        group.current.rotation.set(-Math.PI / 2, Math.PI, 0);
+        if (leftUpperArm.current) leftUpperArm.current.rotation.set(-Math.PI, 0, 0);
+        if (rightUpperArm.current) rightUpperArm.current.rotation.set(-Math.PI, 0, 0);
         return;
       }
 
