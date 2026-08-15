@@ -95,7 +95,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
   useEffect(() => {
     if (appState === AppState.RACING) {
-      startTime.current = performance.now() / 1000;
+      startTime.current = 0;
       currentProgressRef.current = 0;
       collapseAnimProgress.current = 0;
       setProgress(0);
@@ -108,6 +108,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
+      startTime.current = 0;
       group.current.position.set(laneX, onBlockY, startZ);
       group.current.rotation.set(0, Math.PI, 0);
       if (body.current) body.current.rotation.set(0, 0, 0);
@@ -124,6 +125,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
     // ---- READY ----
     if (appState === AppState.READY || appState === AppState.GREETING || appState === AppState.PREPARING) {
+      startTime.current = 0;
       group.current.position.set(laneX, onBlockY, startZ);
       group.current.rotation.set(0, Math.PI, 0);
       group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, onBlockY, 0.2);
@@ -167,7 +169,10 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
       }
 
       if (appState === AppState.RACING && currentProgressRef.current < 1) {
-        const elapsed = t - startTime.current;
+        if (startTime.current === 0) {
+          startTime.current = t;
+        }
+        const elapsed = Math.max(0, t - startTime.current);
         const p_base = elapsed * swimmer.speed;
         let p_spurt = 0;
         if (p_base > swimmer.spurtThreshold) {

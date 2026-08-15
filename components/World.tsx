@@ -28,10 +28,11 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
   useEffect(() => {
     if (appState === AppState.RACING) {
-      raceStartRef.current = performance.now() / 1000;
+      raceStartRef.current = 0;
     }
     if (appState === AppState.IDLE) {
       finishedIds.current.clear();
+      raceStartRef.current = 0;
     }
     if (appState === AppState.GREETING || appState === AppState.PREPARING) {
       onStateTransition(AppState.READY);
@@ -45,6 +46,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- IDLE ----
     if (appState === AppState.IDLE) {
+      raceStartRef.current = 0;
       const angle = t * 0.1;
       const r = Math.max(36, poolSpan * 0.7);
       camPos.current.lerp(new THREE.Vector3(Math.sin(angle) * r, Math.max(20, poolSpan * 0.35), Math.cos(angle) * r - 10), 0.04);
@@ -53,6 +55,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
 
     // ---- READY (출발대 차렷 대기!) ----
     else if (appState === AppState.READY || appState === AppState.GREETING || appState === AppState.PREPARING) {
+      raceStartRef.current = 0;
       camTarget.current.lerp(new THREE.Vector3(0, 0.5, 1.5), 0.1);
       camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
@@ -60,7 +63,10 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
     // ---- RACING (4단계 다이내믹 시네마틱 카메라 전환!) ----
     else if (appState === AppState.RACING) {
       if (swimmers.length === 0) return;
-      const elapsed = t - raceStartRef.current;
+      if (raceStartRef.current === 0) {
+        raceStartRef.current = t;
+      }
+      const elapsed = Math.max(0, t - raceStartRef.current);
 
       // Find Leader & Pack Center
       let centerX = 0;
