@@ -34,7 +34,7 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
   const collapseAnimProgress = useRef(0);
 
   const startZ = 3.6;
-  const finishZ = -51.05; // Swimmer hands touch the touchpad surface (Z=-52.04) cleanly without penetrating wall!
+  const finishZ = -49.8; // Swimmer hands touch the touchpad surface (Z=-52.04) while body stays safely in front (Z=-49.8), ZERO clipping!
   const poolLength = Math.abs(startZ - finishZ);
   const onBlockY = 2.42;
 
@@ -174,24 +174,34 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           p_spurt = Math.pow((p_base - swimmer.spurtThreshold) * 10, 2.2) * swimmer.spurtStrength;
         }
 
-        // Linear forward progress (ZERO surge wobbling!)
-        const nextProgress = Math.max(currentProgressRef.current + delta * 0.02, Math.min(p_base + p_spurt, 1));
+        // Explosive Dive Takeoff Impulse: Launches swimmer 5.2m FORWARD in air into the pool!
+        let diveDistanceBonus = 0;
+        if (elapsed < 1.4) {
+          const diveNorm = elapsed / 1.4;
+          const forwardImpulse = Math.sin(diveNorm * Math.PI * 0.5);
+          diveDistanceBonus = (5.2 / poolLength) * forwardImpulse;
+        }
+
+        const nextProgress = Math.max(
+          currentProgressRef.current + delta * 0.02,
+          Math.min(p_base + p_spurt + diveDistanceBonus, 1)
+        );
         currentProgressRef.current = nextProgress;
         setProgress(nextProgress);
 
         // ================= 1. SMOOTH DIAGONAL PARABOLIC DIVE & NATURAL RESURFACING =================
-        // elapsed 0.0s ~ 0.8s: Head rises slightly at takeoff, body enters water along a clean smooth diagonal trajectory (NO vertical plunging!)
+        // elapsed 0.0s ~ 0.8s: Explosive launch 5.2m forward into pool, smooth parabolic arc & diagonal entry
         // elapsed 0.8s ~ 2.0s: Shallow underwater glide (Y = -0.45m) smoothly ascending along sine curve to water surface (Y = -0.10m)
-        // elapsed >= 2.0s: Surface swimming (fixed surface level Y = -0.10m, ZERO pop-out / flying fish jumping!)
+        // elapsed >= 2.0s: Surface swimming (fixed surface level Y = -0.10m, ZERO pop-out!)
         group.current.position.x = laneX;
         group.current.position.z = startZ - nextProgress * poolLength;
 
         if (elapsed < 2.0) {
           if (elapsed < 0.8) {
-            // Stage 1 (0.0s ~ 0.8s): Smooth parabolic takeoff (head rises slightly) & diagonal entry into water
+            // Stage 1 (0.0s ~ 0.8s): Explosive forward airborne dive into water
             const tNorm = elapsed / 0.8;
             const baseLerpY = THREE.MathUtils.lerp(onBlockY, -0.45, tNorm);
-            const headRiseArc = Math.sin(tNorm * Math.PI) * 0.25; // Smooth upward head arc at takeoff
+            const headRiseArc = Math.sin(tNorm * Math.PI) * 0.35; // Parabolic flight height
             group.current.position.y = baseLerpY + headRiseArc;
 
             // Smooth diagonal pitch (curves smoothly from crouched stance -0.35 to horizontal -Math.PI/2)
