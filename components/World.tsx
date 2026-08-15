@@ -57,7 +57,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
 
-    // ---- RACING (선두 선수를 추적하며, 결승선 다가올 시 터치패드 터치 순간 클로즈업 촬영!) ----
+    // ---- RACING (처음선수부터 끝선수에 이르기까지 모두 결승선에서 바라보는 정면/측면 카메라!) ----
     else if (appState === AppState.RACING) {
       if (swimmers.length === 0) return;
       const elapsed = t - raceStartRef.current;
@@ -91,25 +91,19 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       const finishZ = -49.8;
       const leaderZ = startZ - maxProgress * Math.abs(startZ - finishZ);
       const leaderX = getLaneX(leader.lane, count, laneWidth);
-      const touchpadZ = -52.04;
 
-      if (maxProgress >= 0.65) {
-        // 결승선 접근 시: 카메라는 선두 선수의 노란색 터치패드(Z = -52.04)를 정면/측면에서 정확히 클로즈업 조준!
-        camPos.current.lerp(new THREE.Vector3(leaderX + 2.8, 2.2, leaderZ + 3.8), 0.10);
-        camTarget.current.lerp(new THREE.Vector3(leaderX, -0.1, touchpadZ), 0.12);
-      } else {
-        // 레이스 초/중반: 선두 선수의 측후방 대각선 트래킹 샷
-        camPos.current.lerp(new THREE.Vector3(leaderX + poolSpan * 0.25 + 3.5, 5.5, leaderZ + 7.5), 0.08);
-        camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 2.5), 0.10);
-      }
+      // 카메라는 처음선수부터 끝선수에 이르기까지 레이스 전체 동안 결승선 정면(Z = -54.5m)에 딱 위치하여 다가오는 선수들을 지켜봄!
+      const finishCamX = centerX * 0.3;
+      camPos.current.lerp(new THREE.Vector3(finishCamX, 3.8, -54.5), 0.08);
+      camTarget.current.lerp(new THREE.Vector3(leaderX * 0.6, 0.1, leaderZ), 0.10);
     }
 
-    // ---- FINISHED (결승선 터치 순간 및 완주 하이라이트 뷰) ----
+    // ---- FINISHED (결승선 완주 하이라이트 뷰) ----
     else if (appState === AppState.FINISHED) {
       const leader = swimmers[0];
       const leaderX = leader ? getLaneX(leader.lane, count, laneWidth) : 0;
       const touchpadZ = -52.04;
-      camPos.current.lerp(new THREE.Vector3(leaderX + 2.4, 2.0, -45.5), 0.08);
+      camPos.current.lerp(new THREE.Vector3(leaderX * 0.4, 2.8, -54.5), 0.08);
       camTarget.current.lerp(new THREE.Vector3(leaderX, -0.1, touchpadZ), 0.10);
     }
 

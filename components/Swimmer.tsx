@@ -242,23 +242,35 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           const swimSpeed = Math.max(3.0, Math.min(12, (5.0 + p_spurt * 12) * animMult.current));
           const cycle = t * swimSpeed;
 
-          // 100% Straight extended arm & 5-finger open paddle hand (ZERO kink!)
+          // Real Freestyle High-Elbow Catch & Recovery (Forearm bends 90° mid-stroke and extends back out)
           const computeArm = (phaseOffset: number, armUpperRef, armForearmRef) => {
             if (!armUpperRef.current || !armForearmRef.current) return;
             const ph = (cycle + phaseOffset) % (Math.PI * 2);
             const norm = ph / (Math.PI * 2);
 
             let armX: number;
+            let forearmX: number = 0;
+
             if (norm < 0.5) {
+              // Underwater Pull Phase (0.0 ~ 0.5): Upper arm rotates overhead to hip
               armX = Math.PI * (1 - 4 * norm);
+
+              // 90° High-Elbow Catch: Forearm bends up to 90° (Math.PI/2) mid-pull under body
+              forearmX = Math.sin(norm * Math.PI * 2) * (Math.PI * 0.5);
             } else {
-              armX = -Math.PI + Math.PI * 2 * (norm - 0.5) * 2;
+              // Air Recovery Phase (0.5 ~ 1.0): Upper arm recovers over water from hip to overhead
+              const recNorm = (norm - 0.5) * 2;
+              armX = -Math.PI + Math.PI * 2 * recNorm;
+
+              // High-Elbow Recovery: Forearm bends 90° mid-air and extends straight before re-entering water
+              forearmX = Math.sin(recNorm * Math.PI) * (Math.PI * 0.48);
             }
+
             armUpperRef.current.rotation.x = -armX * 0.95;
             armUpperRef.current.rotation.z = 0;
 
-            // Forearm 100% straight extended: ZERO 90° kink!
-            armForearmRef.current.rotation.x = 0;
+            // Forearm bends at 90° mid-stroke and extends straight!
+            armForearmRef.current.rotation.x = forearmX;
           };
 
           computeArm(0, leftUpperArm, leftForearm);
