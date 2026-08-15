@@ -174,12 +174,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
           p_spurt = Math.pow((p_base - swimmer.spurtThreshold) * 10, 2.2) * swimmer.spurtStrength;
         }
 
-        // Explosive Dive Takeoff Impulse: Launches swimmer 5.2m FORWARD in air into the pool!
+        // Explosive Olympic Dive Impulse: Soars 8.5m forward in air, total 11.5m forward underwater!
         let diveDistanceBonus = 0;
-        if (elapsed < 1.4) {
-          const diveNorm = elapsed / 1.4;
+        if (elapsed < 2.2) {
+          const diveNorm = elapsed / 2.2;
           const forwardImpulse = Math.sin(diveNorm * Math.PI * 0.5);
-          diveDistanceBonus = (5.2 / poolLength) * forwardImpulse;
+          diveDistanceBonus = (11.5 / poolLength) * forwardImpulse;
         }
 
         const nextProgress = Math.max(
@@ -190,27 +190,27 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
         setProgress(nextProgress);
 
         // ================= 1. SMOOTH DIAGONAL PARABOLIC DIVE & NATURAL RESURFACING =================
-        // elapsed 0.0s ~ 0.8s: Explosive launch 5.2m forward into pool, smooth parabolic arc & diagonal entry
-        // elapsed 0.8s ~ 2.0s: Shallow underwater glide (Y = -0.45m) smoothly ascending along sine curve to water surface (Y = -0.10m)
-        // elapsed >= 2.0s: Surface swimming (fixed surface level Y = -0.10m, ZERO pop-out!)
+        // elapsed 0.0s ~ 1.0s: Explosive soaring dive flight 8.5m forward into pool, high parabolic arc & diagonal entry
+        // elapsed 1.0s ~ 2.2s: Shallow underwater glide (Y = -0.45m) smoothly ascending along sine curve to water surface (Y = -0.10m)
+        // elapsed >= 2.2s: Surface swimming (fixed surface level Y = -0.10m, ZERO pop-out!)
         group.current.position.x = laneX;
         group.current.position.z = startZ - nextProgress * poolLength;
 
-        if (elapsed < 2.0) {
-          if (elapsed < 0.8) {
-            // Stage 1 (0.0s ~ 0.8s): Explosive forward airborne dive into water
-            const tNorm = elapsed / 0.8;
+        if (elapsed < 2.2) {
+          if (elapsed < 1.0) {
+            // Stage 1 (0.0s ~ 1.0s): High airborne flight soaring 8.5 meters forward into pool
+            const tNorm = elapsed / 1.0;
             const baseLerpY = THREE.MathUtils.lerp(onBlockY, -0.45, tNorm);
-            const headRiseArc = Math.sin(tNorm * Math.PI) * 0.35; // Parabolic flight height
-            group.current.position.y = baseLerpY + headRiseArc;
+            const leapApexArc = Math.sin(tNorm * Math.PI) * 0.45; // High parabolic soar arc
+            group.current.position.y = baseLerpY + leapApexArc;
 
             // Smooth diagonal pitch (curves smoothly from crouched stance -0.35 to horizontal -Math.PI/2)
             const smoothT = Math.sin(tNorm * Math.PI * 0.5);
             const divePitch = THREE.MathUtils.lerp(-0.35, -Math.PI / 2, smoothT);
             group.current.rotation.set(divePitch, Math.PI, 0);
           } else {
-            // Stage 2 (0.8s ~ 2.0s): Shallow underwater glide and smooth sine wave rise to water surface
-            const tNorm = (elapsed - 0.8) / 1.2;
+            // Stage 2 (1.0s ~ 2.2s): Shallow underwater glide and smooth sine wave rise to water surface
+            const tNorm = (elapsed - 1.0) / 1.2;
             const smoothRise = Math.sin(tNorm * Math.PI * 0.5); // Smooth sine curve 0 to 1
             group.current.position.y = THREE.MathUtils.lerp(-0.45, -0.10, smoothRise);
 

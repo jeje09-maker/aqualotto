@@ -74,8 +74,8 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
           p_spurt = Math.pow((p_base - s.spurtThreshold) * 10, 2.2) * s.spurtStrength;
         }
         let diveBonus = 0;
-        if (elapsed < 1.4) {
-          diveBonus = (5.2 / 53.4) * Math.sin((elapsed / 1.4) * Math.PI * 0.5);
+        if (elapsed < 2.2) {
+          diveBonus = (11.5 / 53.4) * Math.sin((elapsed / 2.2) * Math.PI * 0.5);
         }
         const p = Math.min(1, p_base + p_spurt + diveBonus);
 
