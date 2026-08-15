@@ -39,13 +39,14 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
     };
 
     // Side stands (left and right)
+    // Side stands (left and right)
     for (const xSign of [1, -1]) {
       for (let row = 0; row < rowCount; row++) {
         const x = (poolWidth / 2 + 1.8 + row * rowSpacing) * xSign;
-        const baseY = 0.5 + row * 0.55;
+        const stepTopY = 0.30 + row * 0.50;
         const cols = Math.floor(poolLen / seatSpacing);
         for (let c = 0; c < cols; c++) {
-          push(x, baseY, poolStartZ - c * seatSpacing);
+          push(x, stepTopY, poolStartZ - c * seatSpacing);
         }
       }
     }
@@ -53,12 +54,12 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
     // End stands (behind start blocks)
     for (let row = 0; row < rowCount; row++) {
       const z = poolStartZ + 2.5 + row * rowSpacing;
-      const baseY = 0.5 + row * 0.55;
+      const stepTopY = 0.30 + row * 0.50;
       const totalWidth = poolWidth + 10 + row * 2;
       const cols = Math.floor(totalWidth / seatSpacing);
       for (let c = 0; c < cols; c++) {
         const x = -(totalWidth / 2) + c * seatSpacing;
-        push(x, baseY, z);
+        push(x, stepTopY, z);
       }
     }
 
@@ -70,20 +71,20 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
     const t = state.clock.getElapsedTime();
 
     spectators.forEach((s, i) => {
-      // Clean rhythmic up-down bounce (no chaotic arms)
+      // Clean rhythmic up-down bounce
       const bounce = Math.sin(t * s.cheerSpeed + s.phase) * s.bounceH;
       const curY = s.y + Math.max(0, bounce);
 
-      // --- TORSO ---
-      dummy.position.set(s.x, curY + 0.2, s.z);
+      // --- TORSO (Uniform height above step top surface!) ---
+      dummy.position.set(s.x, curY + 0.22, s.z);
       dummy.scale.set(0.32, 0.44, 0.28);
       dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
       bodyRef.current.setMatrixAt(i, dummy.matrix);
       bodyRef.current.setColorAt(i, s.shirtColor);
 
-      // --- HEAD ---
-      dummy.position.set(s.x, curY + 0.52, s.z);
+      // --- HEAD (Uniform height above step top surface!) ---
+      dummy.position.set(s.x, curY + 0.54, s.z);
       dummy.scale.set(0.22, 0.24, 0.22);
       dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
@@ -103,37 +104,46 @@ const Crowd: React.FC<{ swimmersCount: number }> = ({ swimmersCount }) => {
 
   return (
     <group>
-      {/* Stand steps */}
-      {Array.from({ length: rowCount }).map((_, row) => (
-        <mesh
-          key={`L-${row}`}
-          position={[poolWidth / 2 + 1.8 + row * rowSpacing, row * 0.55 - 0.05, poolStartZ / 2 - poolLen / 2]}
-          receiveShadow castShadow
-        >
-          <boxGeometry args={[rowSpacing * 0.94, 0.2 + row * 0.55, poolLen + 2]} />
-          <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
-        </mesh>
-      ))}
-      {Array.from({ length: rowCount }).map((_, row) => (
-        <mesh
-          key={`R-${row}`}
-          position={[-(poolWidth / 2 + 1.8 + row * rowSpacing), row * 0.55 - 0.05, poolStartZ / 2 - poolLen / 2]}
-          receiveShadow castShadow
-        >
-          <boxGeometry args={[rowSpacing * 0.94, 0.2 + row * 0.55, poolLen + 2]} />
-          <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
-        </mesh>
-      ))}
-      {Array.from({ length: rowCount }).map((_, row) => (
-        <mesh
-          key={`E-${row}`}
-          position={[0, row * 0.55 - 0.05, poolStartZ + 2.5 + row * rowSpacing]}
-          receiveShadow castShadow
-        >
-          <boxGeometry args={[poolWidth + 10 + row * 2, 0.2 + row * 0.55, rowSpacing * 0.94]} />
-          <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
-        </mesh>
-      ))}
+      {/* Stand steps - Exact step top surface alignment */}
+      {Array.from({ length: rowCount }).map((_, row) => {
+        const stepH = 0.30 + row * 0.50;
+        return (
+          <mesh
+            key={`L-${row}`}
+            position={[poolWidth / 2 + 1.8 + row * rowSpacing, stepH / 2, poolStartZ / 2 - poolLen / 2]}
+            receiveShadow castShadow
+          >
+            <boxGeometry args={[rowSpacing * 0.94, stepH, poolLen + 2]} />
+            <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
+          </mesh>
+        );
+      })}
+      {Array.from({ length: rowCount }).map((_, row) => {
+        const stepH = 0.30 + row * 0.50;
+        return (
+          <mesh
+            key={`R-${row}`}
+            position={[-(poolWidth / 2 + 1.8 + row * rowSpacing), stepH / 2, poolStartZ / 2 - poolLen / 2]}
+            receiveShadow castShadow
+          >
+            <boxGeometry args={[rowSpacing * 0.94, stepH, poolLen + 2]} />
+            <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
+          </mesh>
+        );
+      })}
+      {Array.from({ length: rowCount }).map((_, row) => {
+        const stepH = 0.30 + row * 0.50;
+        return (
+          <mesh
+            key={`E-${row}`}
+            position={[0, stepH / 2, poolStartZ + 2.5 + row * rowSpacing]}
+            receiveShadow castShadow
+          >
+            <boxGeometry args={[poolWidth + 10 + row * 2, stepH, rowSpacing * 0.94]} />
+            <meshStandardMaterial color={STAND_COLOR} roughness={0.8} />
+          </mesh>
+        );
+      })}
 
       {/* Spectator Torsos */}
       <instancedMesh ref={bodyRef} args={[null, null, spectators.length]} castShadow>
