@@ -57,7 +57,7 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       camPos.current.lerp(new THREE.Vector3(0, Math.max(6, poolSpan * 0.18), Math.max(14, poolSpan * 0.35)), 0.05);
     }
 
-    // ---- RACING (처음선수부터 끝선수에 이르기까지 모두 결승선에서 바라보는 정면/측면 카메라!) ----
+    // ---- RACING (4단계 다이내믹 시네마틱 카메라 전환!) ----
     else if (appState === AppState.RACING) {
       if (swimmers.length === 0) return;
       const elapsed = t - raceStartRef.current;
@@ -92,19 +92,29 @@ const World: React.FC<WorldProps> = ({ appState, swimmers, onFinish, onStateTran
       const leaderZ = startZ - maxProgress * Math.abs(startZ - finishZ);
       const leaderX = getLaneX(leader.lane, count, laneWidth);
 
-      // 카메라는 처음선수부터 끝선수에 이르기까지 레이스 전체 동안 결승선 정면(Z = -54.5m)에 딱 위치하여 다가오는 선수들을 지켜봄!
-      const finishCamX = centerX * 0.3;
-      camPos.current.lerp(new THREE.Vector3(finishCamX, 3.8, -54.5), 0.08);
-      camTarget.current.lerp(new THREE.Vector3(leaderX * 0.6, 0.1, leaderZ), 0.10);
+      if (maxProgress < 0.20) {
+        // 1단계: 경기 초반/다이빙 - 측면 트래킹 뷰 ("카메라가 처음에는 옆에서")
+        camPos.current.lerp(new THREE.Vector3(leaderX + poolSpan * 0.45 + 5.0, 4.2, leaderZ + 2.0), 0.08);
+        camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ), 0.10);
+      } else if (maxProgress < 0.50) {
+        // 2단계: 경기 중반 1 - 선수들 뒤에서 따라가는 체이스 뷰 ("중간에서는 뒤에서 한 번")
+        camPos.current.lerp(new THREE.Vector3(leaderX * 0.5, 3.8, leaderZ + 9.5), 0.08);
+        camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ - 5.0), 0.10);
+      } else if (maxProgress < 0.80) {
+        // 3단계: 경기 중반 2 - 선수들 앞에서 지켜보는 정면 뷰 ("앞에서 한번")
+        camPos.current.lerp(new THREE.Vector3(centerX * 0.5, 3.2, leaderZ - 8.5), 0.08);
+        camTarget.current.lerp(new THREE.Vector3(leaderX, 0.2, leaderZ), 0.10);
+      } else {
+        // 4단계: 결승선 완주 직전 - 뒤쪽 높이서 수영장 전체 및 결승선을 와이드 조망 ("마지막 결승선에서는 뒤에서 전체를 잡도록 해")
+        camPos.current.lerp(new THREE.Vector3(0, 13.5, 12.0), 0.08);
+        camTarget.current.lerp(new THREE.Vector3(0, -0.5, -50.0), 0.10);
+      }
     }
 
-    // ---- FINISHED (결승선 완주 하이라이트 뷰) ----
+    // ---- FINISHED (완주 후 뒤쪽 높이에서 수영장 전체 전경 와이드 뷰) ----
     else if (appState === AppState.FINISHED) {
-      const leader = swimmers[0];
-      const leaderX = leader ? getLaneX(leader.lane, count, laneWidth) : 0;
-      const touchpadZ = -52.04;
-      camPos.current.lerp(new THREE.Vector3(leaderX * 0.4, 2.8, -54.5), 0.08);
-      camTarget.current.lerp(new THREE.Vector3(leaderX, -0.1, touchpadZ), 0.10);
+      camPos.current.lerp(new THREE.Vector3(0, 13.5, 12.0), 0.08);
+      camTarget.current.lerp(new THREE.Vector3(0, -0.5, -50.0), 0.10);
     }
 
     camera.position.copy(camPos.current);

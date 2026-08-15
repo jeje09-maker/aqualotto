@@ -447,9 +447,12 @@ const Swimmer: React.FC<SwimmerProps> = ({ swimmer, totalSwimmers, appState, isC
 
       </group>
 
-      {/* Dynamic Water Splash ONLY WHEN IN WATER */}
-      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.15 && progress < 0.98 && (
-        <Splash position={[0, 0.1, 0]} scale={2.4} rate={4} />
+      {/* Dynamic Water Splash & Foaming Bubbles at BOTH FEET / KICK ZONE */}
+      {appState === AppState.RACING && !swimmer.isCollapsed && progress >= 0.08 && progress < 0.98 && (
+        <>
+          <Splash position={[-0.14, -0.95, 0]} scale={1.8} rate={4.5} />
+          <Splash position={[0.14, -0.95, 0]} scale={1.8} rate={4.5} />
+        </>
       )}
     </group>
   );
